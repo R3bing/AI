@@ -9,6 +9,9 @@ from backend.apis.arxiv import ArxivClient
 from backend.apis.quran import QuranClient
 from backend.apis.hadith import HadithClient
 from backend.apis.pubmed import PubMedClient
+from backend.apis.nasa import NasaClient
+from backend.apis.openalex import OpenAlexClient
+from backend.apis.pubchem import PubChemClient
 
 
 class APIRegistry:
@@ -24,6 +27,9 @@ class APIRegistry:
         self.register(QuranClient())
         self.register(HadithClient())
         self.register(PubMedClient())
+        self.register(NasaClient())
+        self.register(OpenAlexClient())
+        self.register(PubChemClient())
 
     def register(self, client: BaseAPIClient):
         self._clients[client.api_id] = client

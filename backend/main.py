@@ -113,6 +113,13 @@ async def get_knowledge_graph():
     return graph_memory.get_graph_data()
 
 
+@app.get("/evaluation/benchmark", tags=["Evaluation"])
+async def run_academic_benchmark(query: str = "quantum physics entanglement", target_k: int = 3):
+    """Executes academic benchmark comparing QAOA (XY mixer) vs Classical Greedy, Simulated Annealing, and Brute Force."""
+    from backend.evaluation.benchmark import benchmark_engine
+    return benchmark_engine.run_benchmark(query=query, target_k=target_k)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

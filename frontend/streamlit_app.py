@@ -109,10 +109,17 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.subheader("Quantum Router (QAOA)")
 use_quantum = st.sidebar.checkbox("Enable QAOA API Routing", value=True)
-max_sources = st.sidebar.slider("Target API Budget (K)", min_value=1, max_value=5, value=3)
+max_sources = st.sidebar.slider("Target API Budget (K)", min_value=1, max_value=8, value=3)
+mixer_type = st.sidebar.selectbox(
+    "QAOA Mixer Hamiltonian",
+    options=["xy_mixer", "standard"],
+    index=0,
+    format_func=lambda x: "XY-Mixer (Excitation-Preserving Dicke State)" if x == "xy_mixer" else "Standard Transverse Mixer (X)",
+    help="XY-Mixer mathematically guarantees exactly K APIs are chosen without penalty tuning.",
+)
 
-# Selective API overrides
-available_apis = ["wikipedia", "arxiv", "quran", "hadith", "pubmed"]
+# Selective API overrides across all 8 integrated repositories
+available_apis = ["wikipedia", "arxiv", "quran", "hadith", "pubmed", "nasa", "openalex", "pubchem"]
 force_selection = st.sidebar.multiselect(
     "Force Specific APIs (Optional)",
     options=available_apis,
@@ -123,23 +130,26 @@ force_selection = st.sidebar.multiselect(
 # Header
 st.title("⚛️ Quantum Knowledge Weaver (QKW)")
 st.markdown(
-    "Synthesizing authoritative answers across **Wikipedia**, **arXiv**, **Quran**, **Hadith**, and **PubMed** "
-    "using **QAOA quantum routing**, **semantic cross-referencing**, and **anti-hallucinatory LLM synthesis**."
+    "Synthesizing authoritative answers across **Wikipedia**, **arXiv**, **Quran**, **Hadith**, **PubMed**, "
+    "**NASA**, **OpenAlex**, and **PubChem** using **QAOA quantum routing**, **semantic cross-referencing**, and **anti-hallucinatory LLM synthesis**."
 )
 
 # Sample Queries
 st.markdown("##### 💡 Try an Example Prompt:")
-col_ex1, col_ex2, col_ex3 = st.columns(3)
+col_ex1, col_ex2, col_ex3, col_ex4 = st.columns(4)
 sample_query = None
 
-if col_ex1.button("🔬 Quantum Computing & Interconnectedness", use_container_width=True):
+if col_ex1.button("🔬 Quantum Physics & Interconnectedness", use_container_width=True):
     sample_query = "What does modern physics say about quantum entanglement and interconnectedness, and how does classical thought or theology reflect on universal unity?"
 
-if col_ex2.button("🏥 Disease Treatment & Healthcare Traditions", use_container_width=True):
+if col_ex2.button("🏥 Medicine, Hygiene & Traditions", use_container_width=True):
     sample_query = "How do modern medical research and prophetic traditions approach medicine, hygiene, and disease treatment?"
 
-if col_ex3.button("⚡ Algorithmic Optimization & AI QAOA", use_container_width=True):
-    sample_query = "What are the latest algorithmic advances in quantum approximate optimization algorithms (QAOA) for combinatorial graph routing?"
+if col_ex3.button("🌌 NASA Astrophysics & Deep Space", use_container_width=True):
+    sample_query = "What are the latest observations and discoveries about black holes, galaxies, and cosmology from space telescopes?"
+
+if col_ex4.button("🧪 Molecular Drugs & Chemical Compounds", use_container_width=True):
+    sample_query = "What is the molecular formula, synthesis, and mechanism of action of penicillin in treating bacterial infections?"
 
 # Main Query Input
 query_text = st.text_input(
@@ -205,11 +215,12 @@ if execute_search and query_text.strip():
             m4.metric("Memory Cache", "Hit (Fast)" if response_data.get("cached") else "Miss (Fresh)")
 
             # Tabbed View
-            tab_ans, tab_quantum, tab_cross, tab_graph = st.tabs([
+            tab_ans, tab_quantum, tab_cross, tab_graph, tab_bench = st.tabs([
                 "📄 Synthesized Answer & Citations",
                 "⚛️ Quantum QAOA Telemetry",
                 "🔗 Cross-Reference Matrix",
                 "🧠 Knowledge Graph & Demos",
+                "📊 Academic Benchmark & Paper Lab",
             ])
 
             # Tab 1: Answer & Citations
@@ -322,6 +333,84 @@ if execute_search and query_text.strip():
                         res = vqe_simulator.simulate_ground_state(bond_distance=bond_dist)
                         st.success(f"VQE Ground State Energy: {res['vqe_ground_state_energy_hartree']} Hartree (Error: {res['absolute_error_hartree']} Ha)")
                         st.json(res)
+
+            # Tab 5: Academic Benchmark & Paper Metrics
+            with tab_bench:
+                st.markdown("### 📊 Quantum Advantage & Academic Benchmark Suite")
+                st.markdown(
+                    "Rigorous performance evaluation comparing **QAOA (XY-Mixer with Dicke states)** against "
+                    "classical baselines (**Greedy**, **Simulated Annealing**, and **Exact Brute Force**)."
+                )
+
+                if st.button("🚀 Run Comparative Benchmark for this Query"):
+                    with st.spinner("Executing QAOA vs Classical Solvers..."):
+                        from backend.evaluation.benchmark import benchmark_engine
+                        bench_res = benchmark_engine.run_benchmark(query=query_text.strip(), target_k=max_sources)
+
+                        b_qaoa = bench_res["qaoa_xy_mixer"]
+                        b_opt = bench_res["exact_global_optimum"]
+                        b_greedy = bench_res["classical_greedy"]
+                        b_sa = bench_res["classical_simulated_annealing"]
+
+                        st.success(bench_res["quantum_advantage_summary"])
+
+                        # Comparison metrics cards
+                        bm1, bm2, bm3 = st.columns(3)
+                        bm1.metric("QAOA Approx Ratio (α)", f"{b_qaoa['approximation_ratio'] * 100:.1f}%")
+                        bm2.metric("QAOA Cost Energy", f"{b_qaoa['cost']:.4f}")
+                        bm3.metric("Global Optimum Cost", f"{b_opt['cost']:.4f}")
+
+                        # Comparison Table
+                        df_bench = pd.DataFrame([
+                            {
+                                "Algorithm": "QAOA (XY-Mixer)",
+                                "Solution Bitstring": b_qaoa["bitstring"],
+                                "Cost Value (Lower is Better)": b_qaoa["cost"],
+                                "Latency (ms)": b_qaoa["latency_ms"],
+                                "APIs Selected": ", ".join(b_qaoa["selected_apis"]),
+                            },
+                            {
+                                "Algorithm": "Exact Global (Brute Force)",
+                                "Solution Bitstring": b_opt["bitstring"],
+                                "Cost Value (Lower is Better)": b_opt["cost"],
+                                "Latency (ms)": b_opt["latency_ms"],
+                                "APIs Selected": ", ".join(b_opt["selected_apis"]),
+                            },
+                            {
+                                "Algorithm": "Classical Simulated Annealing",
+                                "Solution Bitstring": b_sa["bitstring"],
+                                "Cost Value (Lower is Better)": b_sa["cost"],
+                                "Latency (ms)": b_sa["latency_ms"],
+                                "APIs Selected": ", ".join(b_sa["selected_apis"]),
+                            },
+                            {
+                                "Algorithm": "Classical Greedy",
+                                "Solution Bitstring": b_greedy["bitstring"],
+                                "Cost Value (Lower is Better)": b_greedy["cost"],
+                                "Latency (ms)": b_greedy["latency_ms"],
+                                "APIs Selected": ", ".join(b_greedy["selected_apis"]),
+                            },
+                        ])
+                        st.dataframe(df_bench, use_container_width=True)
+
+                        # LaTeX Table Generator for arXiv
+                        st.markdown("#### 📝 LaTeX Table for arXiv Paper:")
+                        latex_code = f"""\\begin{{table}}[h]
+\\centering
+\\begin{{tabular}}{{|l|c|c|c|}}
+\\hline
+\\textbf{{Algorithm}} & \\textbf{{Cost}} & \\textbf{{Latency (ms)}} & \\textbf{{Approximation Ratio}} \\\\
+\\hline
+QAOA (XY-Mixer, $p=1$) & {b_qaoa['cost']:.4f} & {b_qaoa['latency_ms']:.1f} & {b_qaoa['approximation_ratio']:.3f} \\\\
+Classical Simulated Annealing & {b_sa['cost']:.4f} & {b_sa['latency_ms']:.1f} & - \\\\
+Classical Greedy & {b_greedy['cost']:.4f} & {b_greedy['latency_ms']:.1f} & - \\\\
+Exact Global Optimum & {b_opt['cost']:.4f} & {b_opt['latency_ms']:.1f} & 1.000 \\\\
+\\hline
+\\end{{tabular}}
+\\caption{{Performance comparison on {bench_res['qubits_n']}-qubit Hamiltonian for query: '{query_text.strip()}'}}
+\\label{{tab:qaoa_benchmark}}
+\\end{{table}}"""
+                        st.code(latex_code, language="latex")
 
 st.markdown("---")
 st.caption("Quantum Knowledge Weaver (QKW) • Built with FastAPI, Qiskit, Qdrant, Neo4j, Ollama, & Streamlit")

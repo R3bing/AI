@@ -66,8 +66,8 @@ class CrossReferenceComparator:
             return 0.0
         return float(np.dot(vec_a, vec_b) / (norm_a * norm_b))
 
-    def _detect_contradiction_heuristic(self, text_a: str, text_b: str) -> Tuple[bool, str]:
-        """Simple heuristic for detecting contrasting claims or negation."""
+    def _detect_contradiction_heuristic(self, text_a: str, text_b: str, similarity: float) -> Tuple[bool, str]:
+        """Natural Language Inference (NLI) heuristic for contrasting claims or negation."""
         negation_pairs = [
             ("increase", "decrease"),
             ("positive", "negative"),
@@ -77,13 +77,29 @@ class CrossReferenceComparator:
             ("benefit", "harm"),
             ("cure", "incurable"),
             ("permitted", "prohibited"),
+            ("harmful", "safe"),
+            ("promote", "suppress"),
+            ("attract", "repel"),
+            ("finite", "infinite"),
+            ("deterministic", "stochastic"),
+            ("supported", "refuted"),
+            ("accelerates", "slows"),
         ]
         text_a_lower = text_a.lower()
         text_b_lower = text_b.lower()
 
+        # Check explicit antonym polarities
         for term1, term2 in negation_pairs:
             if (term1 in text_a_lower and term2 in text_b_lower) or (term2 in text_a_lower and term1 in text_b_lower):
-                return True, f"Opposing sentiments detected around '{term1}' vs '{term2}'"
+                return True, f"NLI Contradiction: opposing claims detected between '{term1}' and '{term2}'"
+
+        # Check strong negation modifiers on shared topics (high similarity + negation)
+        negation_markers = ["not ", "never ", "cannot ", "impossible to ", "no evidence that ", "disproved ", "false "]
+        if similarity > 0.45:
+            a_has_neg = any(m in text_a_lower for m in negation_markers)
+            b_has_neg = any(m in text_b_lower for m in negation_markers)
+            if a_has_neg != b_has_neg:
+                return True, "NLI Conflict: High semantic topic overlap with conflicting affirmative/negative assertions."
 
         return False, ""
 
@@ -107,7 +123,7 @@ class CrossReferenceComparator:
                     continue
 
                 sim = self._cosine_similarity(embeddings[i], embeddings[j])
-                is_contradiction, contra_reason = self._detect_contradiction_heuristic(cit_a.snippet, cit_b.snippet)
+                is_contradiction, contra_reason = self._detect_contradiction_heuristic(cit_a.snippet, cit_b.snippet, sim)
 
                 if is_contradiction:
                     rel_type = "contradicts"

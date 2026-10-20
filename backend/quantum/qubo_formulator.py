@@ -36,6 +36,9 @@ class QUBOFormulator:
         scientific_keywords = {"quantum", "physics", "algorithm", "qubit", "computer", "math", "equation", "tensor"}
         biomedical_keywords = {"disease", "cell", "cancer", "protein", "dna", "gene", "virus", "treatment", "medicine", "clinical"}
         theological_keywords = {"quran", "hadith", "prophet", "islam", "allah", "surah", "verse", "sunnah", "prayer", "faith", "deen"}
+        space_keywords = {"space", "astronomy", "planet", "galaxy", "cosmology", "telescope", "orbit", "universe", "star", "mars"}
+        chemical_keywords = {"chemical", "compound", "molecule", "formula", "drug", "acid", "synthesis", "bonding", "reaction"}
+        academic_keywords = {"citation", "paper", "journal", "author", "scholar", "study", "literature", "review"}
         historical_general = {"history", "who", "when", "what", "war", "century", "empire", "biography", "concept", "philosophy"}
 
         for api in apis_metadata:
@@ -56,6 +59,12 @@ class QUBOFormulator:
                 base_score += 0.85
             elif api_id == "hadith" and any(k in q_lower for k in theological_keywords):
                 base_score += 0.80
+            elif api_id == "nasa" and any(k in q_lower for k in space_keywords):
+                base_score += 0.85
+            elif api_id == "pubchem" and any(k in q_lower for k in chemical_keywords):
+                base_score += 0.85
+            elif api_id == "openalex" and (any(k in q_lower for k in academic_keywords) or any(k in q_lower for k in scientific_keywords)):
+                base_score += 0.75
             elif api_id == "wikipedia" and (any(k in q_lower for k in historical_general) or True):
                 base_score += 0.45  # Wikipedia is versatile
 
@@ -63,6 +72,23 @@ class QUBOFormulator:
             scores[api_id] = float(np.clip(base_score, 0.05, 1.0))
 
         return scores
+
+    # Known cross-domain synergy pairs (negative energy reward for joint selection)
+    CROSS_API_SYNERGIES = {
+        ("arxiv", "nasa"): -1.2,
+        ("arxiv", "openalex"): -1.0,
+        ("quran", "hadith"): -1.5,
+        ("pubmed", "pubchem"): -1.3,
+        ("pubmed", "hadith"): -0.7,
+        ("wikipedia", "openalex"): -0.6,
+        ("nasa", "wikipedia"): -0.5,
+    }
+
+    def _get_pairwise_synergy(self, api_a: str, api_b: str) -> float:
+        """Retrieves pairwise cross-API coupling reward/penalty."""
+        pair = (api_a, api_b)
+        rev_pair = (api_b, api_a)
+        return self.CROSS_API_SYNERGIES.get(pair, self.CROSS_API_SYNERGIES.get(rev_pair, 0.0))
 
     def build_qubo_matrix(
         self,
@@ -90,8 +116,8 @@ class QUBOFormulator:
         Q = np.zeros((N, N))
 
         # Diagonal entries Q_ii:
-        # From objective: - w_rel * R_i + w_lat * L_i
-        # From penalty: P * (1 - 2*K) * x_i  (since x_i^2 = x_i)
+        # Linear: - w_rel * R_i + w_lat * L_i
+        # Penalty: P * (1 - 2*K) * x_i  (since x_i^2 = x_i)
         for i in range(N):
             api_id = api_ids[i]
             r_i = rel_scores[api_id]
@@ -102,11 +128,14 @@ class QUBOFormulator:
             Q[i, i] = linear_term + penalty_term
 
         # Off-diagonal entries Q_ij (i != j):
-        # From penalty: 2 * P * x_i * x_j
+        # Cardinality Penalty: 2 * P * x_i * x_j
+        # Quantum Covariance Synergy: + J_ij * x_i * x_j
         for i in range(N):
             for j in range(i + 1, N):
-                Q[i, j] = 2.0 * self.penalty
-                Q[j, i] = 2.0 * self.penalty
+                synergy_coupling = self._get_pairwise_synergy(api_ids[i], api_ids[j])
+                coupling_term = 2.0 * self.penalty + synergy_coupling
+                Q[i, j] = coupling_term
+                Q[j, i] = coupling_term
 
         return Q, api_ids, rel_scores
 

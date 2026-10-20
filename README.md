@@ -7,7 +7,7 @@
 [![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20Memory-red.svg)](https://qdrant.tech/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-UI-FF4B4B.svg)](https://streamlit.io/)
 
-**Quantum Knowledge Weaver (QKW)** is an open-source, hybrid quantum-classical multi-source knowledge orchestration brain. It comprehends complex user inquiries, optimizes API selection via the **Quantum Approximate Optimization Algorithm (QAOA)** mapped to a **QUBO Hamiltonian**, concurrently fetches ground truth from heterogeneous public repositories (**Wikipedia**, **arXiv**, **The Holy Quran**, **Hadith Traditions**, and **PubMed**), cross-references disparate claims for corroboration and contradictions, and synthesizes citation-backed answers using local, open-source LLMs (**Ollama**).
+**Quantum Knowledge Weaver (QKW)** is an open-source, hybrid quantum-classical multi-source knowledge orchestration brain. It comprehends complex user inquiries, optimizes API selection via the **Quantum Approximate Optimization Algorithm (QAOA with XY-Mixer & Dicke States)** mapped to a **QUBO Hamiltonian with Quantum Covariance Synergies**, concurrently fetches ground truth from 8 heterogeneous public repositories (**Wikipedia**, **arXiv**, **The Holy Quran**, **Hadith Traditions**, **PubMed**, **NASA Open Science**, **OpenAlex Academic Graph**, and **PubChem**), cross-references disparate claims for corroboration and contradictions via Natural Language Inference (NLI), and synthesizes citation-backed answers using local, open-source LLMs (**Ollama**).
 
 ---
 
@@ -21,21 +21,24 @@ flowchart TD
     Qdrant -.->|Cache Hit < 20ms| UI
     Qdrant -->|Cache Miss| Orchestrator[Classical Orchestrator]
 
-    subgraph Quantum_Router [⚛️ Quantum Routing Layer]
-        Orchestrator --> Formulator[QUBO & Ising Hamiltonian Formulator]
-        Formulator --> QAOA[QAOA Quantum Optimizer / Statevector Ansatz]
-        QAOA --> Winner[Optimal API Selection Vector]
+    subgraph Quantum_Router [⚛️ Quantum Routing Layer - 8 Qubits]
+        Orchestrator --> Formulator[QUBO & Ising Hamiltonian + Covariance Synergies J_ij]
+        Formulator --> QAOA[QAOA XY-Mixer Optimizer / Dicke State |D_N^K>]
+        QAOA --> Winner[Optimal API Selection Vector x_i in {0,1}^8]
     end
 
     subgraph External_APIs [🌐 Asynchronous Distributed Data Sources]
-        Winner -->|Async Parallel Call| Wiki[Wikipedia Action API]
-        Winner -->|Async Parallel Call| Arxiv[arXiv Atom Feed]
-        Winner -->|Async Parallel Call| Quran[Quranic Corpus API]
-        Winner -->|Async Parallel Call| Hadith[Hadith Traditions Index]
-        Winner -->|Async Parallel Call| PubMed[PubMed NCBI E-Utilities]
+        Winner -->|Async Parallel| Wiki[Wikipedia Action API]
+        Winner -->|Async Parallel| Arxiv[arXiv Atom Feed]
+        Winner -->|Async Parallel| Quran[Quranic Corpus API]
+        Winner -->|Async Parallel| Hadith[Hadith Traditions Index]
+        Winner -->|Async Parallel| PubMed[PubMed NCBI E-Utilities]
+        Winner -->|Async Parallel| NASA[NASA Astrophysics API]
+        Winner -->|Async Parallel| OpenAlex[OpenAlex Academic Graph]
+        Winner -->|Async Parallel| PubChem[PubChem Chemical DB]
     end
 
-    Wiki & Arxiv & Quran & Hadith & PubMed --> Aggregator[Result & Citation Collector]
+    Wiki & Arxiv & Quran & Hadith & PubMed & NASA & OpenAlex & PubChem --> Aggregator[Result & Citation Collector]
 
     subgraph Synthesis_and_Memory [🧠 Cross-Reference & Synthesis Engine]
         Aggregator --> CrossRef[Semantic Cross-Reference & Contradiction Layer]
