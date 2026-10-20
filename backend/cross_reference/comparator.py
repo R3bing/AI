@@ -21,15 +21,21 @@ class CrossReferenceComparator:
     def _get_embedding(self, text: str) -> np.ndarray:
         """Computes text embedding using sentence-transformers if available, or TF-IDF vectorizer fallback."""
         if not self._model_loaded:
-            try:
-                from sentence_transformers import SentenceTransformer
-                self._model = SentenceTransformer("all-MiniLM-L6-v2")
-                self._model_loaded = True
-                logger.info("sentence_transformers_loaded")
-            except Exception as e:
-                logger.info("sentence_transformers_not_available_using_ngram_fallback", error=str(e))
+            import importlib
+            import importlib.util
+
+            if importlib.util.find_spec("sentence_transformers") is not None:
+                try:
+                    st_module = importlib.import_module("sentence_transformers")
+                    SentenceTransformer = getattr(st_module, "SentenceTransformer")
+                    self._model = SentenceTransformer("all-MiniLM-L6-v2")
+                    logger.info("sentence_transformers_loaded")
+                except Exception as e:
+                    logger.info("sentence_transformers_load_failed", error=str(e))
+                    self._model = None
+            else:
                 self._model = None
-                self._model_loaded = True
+            self._model_loaded = True
 
         if self._model is not None:
             return self._model.encode(text, convert_to_numpy=True)
