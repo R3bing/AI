@@ -22,6 +22,7 @@ from backend.quantum.vqe_simulator import vqe_simulator
 from backend.memory.qdrant_store import vector_memory
 from backend.memory.neo4j_store import graph_memory
 from backend.synthesis.synthesizer import llm_synthesizer
+from backend.neural_brain.models import NeuralBrainResponse
 
 logger = structlog.get_logger(__name__)
 
@@ -118,6 +119,15 @@ async def run_academic_benchmark(query: str = "quantum physics entanglement", ta
     """Executes academic benchmark comparing QAOA (XY mixer) vs Classical Greedy, Simulated Annealing, and Brute Force."""
     from backend.evaluation.benchmark import benchmark_engine
     return benchmark_engine.run_benchmark(query=query, target_k=target_k)
+
+
+@app.post("/brain/think", response_model=NeuralBrainResponse, tags=["Neural Brain"])
+async def neural_brain_think(request: QueryRequest):
+    """Executes human-like dual-hemisphere reasoning balancing Particle (Aql) and Wave (Qalb)
+    along with full background cognitive flowchart trace.
+    """
+    from backend.neural_brain.engine import neural_brain
+    return await neural_brain.think_and_reply(query=request.text)
 
 
 if __name__ == "__main__":

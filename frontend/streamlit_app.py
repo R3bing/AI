@@ -107,6 +107,15 @@ else:
     st.sidebar.warning("○ Backend Server Offline (Using In-Process Direct Engine)")
 
 st.sidebar.markdown("---")
+st.sidebar.subheader("Cognitive Mode")
+brain_mode = st.sidebar.radio(
+    "Architecture Selection",
+    options=["🧠 Neural Brain (Heart & Brain Duality)", "⚛️ Standard QAOA Orchestrator"],
+    index=0,
+    help="Neural Brain balances Logic (Particle/Aql) and Spiritual Contemplation (Wave/Qalb) via background cognitive flowchart.",
+)
+
+st.sidebar.markdown("---")
 st.sidebar.subheader("Quantum Router (QAOA)")
 use_quantum = st.sidebar.checkbox("Enable QAOA API Routing", value=True)
 max_sources = st.sidebar.slider("Target API Budget (K)", min_value=1, max_value=8, value=3)
@@ -162,51 +171,175 @@ col_btn, col_clear = st.columns([1, 6])
 execute_search = col_btn.button("🔍 Weave Knowledge", type="primary", use_container_width=True)
 
 if execute_search and query_text.strip():
-    with st.spinner("Executing QAOA Quantum Routing & Multi-Source Retrieval..."):
+    is_neural_mode = "Neural Brain" in brain_mode
+
+    with st.spinner("Processing through Neural-Quantum Dual-Hemisphere Cognitive Architecture..." if is_neural_mode else "Executing QAOA Quantum Routing & Multi-Source Retrieval..."):
         response_data = None
+        brain_response = None
         error_msg = None
 
-        payload = {
-            "text": query_text.strip(),
-            "use_quantum": use_quantum,
-            "max_sources": max_sources,
-            "force_apis": force_selection if force_selection else None,
-        }
+        if is_neural_mode:
+            # 1. Neural Brain Mode (Heart & Brain Duality)
+            if backend_online:
+                try:
+                    res = requests.post(f"{api_backend_url}/brain/think", json={"text": query_text.strip()}, timeout=40.0)
+                    if res.status_code == 200:
+                        brain_response = res.json()
+                    else:
+                        error_msg = f"HTTP {res.status_code}: {res.text}"
+                except Exception as e:
+                    error_msg = str(e)
 
-        # Try HTTP backend first
-        if backend_online:
-            try:
-                res = requests.post(f"{api_backend_url}/query", json=payload, timeout=30.0)
-                if res.status_code == 200:
-                    response_data = res.json()
-                else:
-                    error_msg = f"HTTP {res.status_code}: {res.text}"
-            except Exception as e:
-                error_msg = str(e)
+            if not brain_response:
+                try:
+                    import asyncio
+                    from backend.neural_brain.engine import neural_brain
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    res_obj = loop.run_until_complete(neural_brain.think_and_reply(query_text.strip()))
+                    brain_response = res_obj.model_dump()
+                except Exception as e:
+                    error_msg = f"In-process Neural Brain error: {str(e)}"
 
-        # In-process direct fallback if backend not running
-        if not response_data:
-            try:
-                import asyncio
-                from backend.orchestrator.engine import orchestrator
-                from backend.orchestrator.models import QueryRequest
+        else:
+            # 2. Standard QAOA Orchestrator Mode
+            payload = {
+                "text": query_text.strip(),
+                "use_quantum": use_quantum,
+                "max_sources": max_sources,
+                "force_apis": force_selection if force_selection else None,
+            }
 
-                req = QueryRequest(
-                    text=query_text.strip(),
-                    use_quantum=use_quantum,
-                    max_sources=max_sources,
-                    force_apis=force_selection if force_selection else None,
-                )
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                res_obj = loop.run_until_complete(orchestrator.execute_query(req))
-                response_data = res_obj.model_dump()
-            except Exception as e:
-                error_msg = f"In-process execution error: {str(e)}"
+            if backend_online:
+                try:
+                    res = requests.post(f"{api_backend_url}/query", json=payload, timeout=30.0)
+                    if res.status_code == 200:
+                        response_data = res.json()
+                    else:
+                        error_msg = f"HTTP {res.status_code}: {res.text}"
+                except Exception as e:
+                    error_msg = str(e)
 
-        if error_msg and not response_data:
+            if not response_data:
+                try:
+                    import asyncio
+                    from backend.orchestrator.engine import orchestrator
+                    from backend.orchestrator.models import QueryRequest
+
+                    req = QueryRequest(
+                        text=query_text.strip(),
+                        use_quantum=use_quantum,
+                        max_sources=max_sources,
+                        force_apis=force_selection if force_selection else None,
+                    )
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    res_obj = loop.run_until_complete(orchestrator.execute_query(req))
+                    response_data = res_obj.model_dump()
+                except Exception as e:
+                    error_msg = f"In-process execution error: {str(e)}"
+
+        # -------------------------------------------------------------
+        # Render Results
+        # -------------------------------------------------------------
+        if error_msg and not brain_response and not response_data:
             st.error(f"Execution Error: {error_msg}")
+
+        elif brain_response:
+            # RENDER NEURAL BRAIN DUALITY MODE
+            duality = brain_response.get("duality_state", {})
+            flow = brain_response.get("cognitive_flow", {})
+
+            # Duality Superposition Header Card
+            st.markdown(
+                f"""
+                <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+                            border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h3 style="margin-top:0; color: #a855f7;">⚛️ Wave-Particle Atomic Duality State: |Ψ⟩ = α|Aql⟩ + β|Qalb⟩</h3>
+                    <p style="color: #cbd5e1; margin-bottom: 8px;">
+                        Mimicking the fundamental duality of matter & energy: balancing <b>Aql (Particle/Logic/Fact)</b>
+                        with <b>Qalb (Wave/Spirit/Tafakkur)</b>.
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Duality Metrics
+            dm1, dm2, dm3, dm4 = st.columns(4)
+            dm1.metric("Dominant Resonance", duality.get("dominant_state", "Equilibrium"))
+            dm2.metric("Particle |Aql|² (Logic)", f"{duality.get('particle_probability', 0) * 100:.1f}%")
+            dm3.metric("Wave |Qalb|² (Spirit)", f"{duality.get('wave_probability', 0) * 100:.1f}%")
+            dm4.metric("Cognitive Latency", f"{flow.get('total_synaptic_latency_ms', 0):.1f} ms")
+
+            # Dual progress ratio bar
+            particle_pct = duality.get("particle_probability", 0.5)
+            st.markdown(f"**Aql (Particle / Logic) vs. Qalb (Wave / Contemplation) Balance:**")
+            st.progress(float(particle_pct), text=f"Left: Aql/Brain {particle_pct*100:.1f}% ⟵ Harmonious Equilibrium ⟶ Right: Qalb/Heart {(1-particle_pct)*100:.1f}%")
+
+            # Brain Tabs
+            tab_syn, tab_flow, tab_tafakkur, tab_emp, tab_bench = st.tabs([
+                "⚖️ Harmonious Synthesis",
+                "🧠 Background Cognitive Flowchart",
+                "🕊️ Tafakkur & Spiritual Dimension",
+                "📚 Empirical Citations & Qubits",
+                "📊 Academic Benchmark & Paper Lab",
+            ])
+
+            with tab_syn:
+                st.markdown(brain_response.get("harmonious_synthesis", ""))
+
+            with tab_flow:
+                st.markdown("### 🧠 Background Neuro-Cognitive Reasoning Flowchart")
+                st.markdown(
+                    "Trace of the brain's internal reasoning from sensory intake (Thalamus) through "
+                    "parallel dual-hemispheric processing and corpus callosum synaptic bridge:"
+                )
+
+                nodes = flow.get("nodes", [])
+                for node in nodes:
+                    hem = node.get("hemisphere", "Both")
+                    badge_color = "#3b82f6" if "Left" in hem else ("#10b981" if "Right" in hem else "#a855f7")
+
+                    st.markdown(
+                        f"""
+                        <div style="background: #1e293b; border-left: 4px solid {badge_color};
+                                    border-radius: 6px; padding: 12px 16px; margin-bottom: 10px;">
+                            <span style="background: {badge_color}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">
+                                {node.get('phase', '').upper()} • {hem}
+                            </span>
+                            <strong style="margin-left: 8px; color: #f8fafc;">{node.get('action_taken')}</strong>
+                            <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 0.9rem;">{node.get('output_summary')}</p>
+                            <small style="color: #64748b;">Synaptic Latency: {node.get('activation_energy', 0):.2f} ms</small>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+            with tab_tafakkur:
+                st.markdown("### 🕊️ Tafakkur: Contemplative Spiritual Psychology")
+                st.markdown(brain_response.get("tafakkur_reflection", ""))
+                st.info("The Tafakkur engine synthesizes Islamic psychology, Ghazalian wisdom, and Sufi nafs models to provide emotional grounding and self-reflection.")
+
+            with tab_emp:
+                st.markdown("### 📚 Authoritative Multi-Source Citations (8 APIs)")
+                citations = brain_response.get("citations", [])
+                for i, cit in enumerate(citations, 1):
+                    with st.expander(f"[{i}] {cit.get('source_name')} — {cit.get('title')}", expanded=True):
+                        st.markdown(f"**Snippet:** *\"{cit.get('snippet')}\"*")
+                        if cit.get("url"):
+                            st.markdown(f"🔗 **URL:** [{cit.get('url')}]({cit.get('url')})")
+
+            with tab_bench:
+                st.markdown("### 📊 Quantum Advantage & Academic Benchmark Suite")
+                if st.button("🚀 Run Comparative Benchmark for this Query", key="bench_neural_btn"):
+                    with st.spinner("Executing QAOA vs Classical Solvers..."):
+                        from backend.evaluation.benchmark import benchmark_engine
+                        bench_res = benchmark_engine.run_benchmark(query=query_text.strip(), target_k=max_sources)
+                        st.json(bench_res)
+
         elif response_data:
+            # RENDER STANDARD QAOA ORCHESTRATOR MODE
             # Display Metrics
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Total Latency", f"{response_data.get('total_latency_ms', 0):.1f} ms")
