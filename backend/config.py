@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 
 class Settings(BaseModel):
