@@ -12,6 +12,9 @@ from backend.apis.pubmed import PubMedClient
 from backend.apis.nasa import NasaClient
 from backend.apis.openalex import OpenAlexClient
 from backend.apis.pubchem import PubChemClient
+from backend.apis.google_data import GoogleDataClient
+from backend.apis.crossref import CrossrefClient
+from backend.apis.openlibrary import OpenLibraryClient
 
 
 class APIRegistry:
@@ -30,6 +33,9 @@ class APIRegistry:
         self.register(NasaClient())
         self.register(OpenAlexClient())
         self.register(PubChemClient())
+        self.register(GoogleDataClient())
+        self.register(CrossrefClient())
+        self.register(OpenLibraryClient())
 
     def register(self, client: BaseAPIClient):
         self._clients[client.api_id] = client

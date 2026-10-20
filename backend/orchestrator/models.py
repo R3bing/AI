@@ -12,6 +12,7 @@ class QueryRequest(BaseModel):
     use_quantum: bool = Field(default=True, description="Enable QAOA quantum routing for API selection")
     force_apis: Optional[List[str]] = Field(default=None, description="Explicitly override API selection")
     max_sources: int = Field(default=4, ge=1, le=10, description="Maximum number of sources to retrieve")
+    mixer_type: str = Field(default="xy_mixer", description="QAOA Mixer Hamiltonian: xy_mixer or standard")
 
 
 class SourceCitation(BaseModel):

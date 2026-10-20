@@ -40,6 +40,9 @@ class QUBOFormulator:
         chemical_keywords = {"chemical", "compound", "molecule", "formula", "drug", "acid", "synthesis", "bonding", "reaction"}
         academic_keywords = {"citation", "paper", "journal", "author", "scholar", "study", "literature", "review"}
         historical_general = {"history", "who", "when", "what", "war", "century", "empire", "biography", "concept", "philosophy"}
+        google_keywords = {"google", "news", "current", "latest", "recent", "trending", "update", "today", "discovery", "breakthrough", "world"}
+        book_keywords = {"book", "author", "philosophy", "monograph", "literature", "treatise", "classic", "dialogue", "history", "ancient"}
+        crossref_keywords = {"doi", "peer-reviewed", "journal", "published", "crossref", "springer", "elsevier", "ieee", "nature"}
 
         for api in apis_metadata:
             api_id = api["id"]
@@ -65,6 +68,12 @@ class QUBOFormulator:
                 base_score += 0.85
             elif api_id == "openalex" and (any(k in q_lower for k in academic_keywords) or any(k in q_lower for k in scientific_keywords)):
                 base_score += 0.75
+            elif api_id == "google" and (any(k in q_lower for k in google_keywords) or True):
+                base_score += 0.55  # Google is high-utility global live feed
+            elif api_id == "crossref" and (any(k in q_lower for k in crossref_keywords) or any(k in q_lower for k in academic_keywords)):
+                base_score += 0.75
+            elif api_id == "openlibrary" and any(k in q_lower for k in book_keywords):
+                base_score += 0.70
             elif api_id == "wikipedia" and (any(k in q_lower for k in historical_general) or True):
                 base_score += 0.45  # Wikipedia is versatile
 
@@ -82,6 +91,12 @@ class QUBOFormulator:
         ("pubmed", "hadith"): -0.7,
         ("wikipedia", "openalex"): -0.6,
         ("nasa", "wikipedia"): -0.5,
+        ("google", "wikipedia"): -0.8,
+        ("google", "openalex"): -0.8,
+        ("crossref", "openalex"): -1.2,
+        ("crossref", "arxiv"): -1.0,
+        ("openlibrary", "wikipedia"): -0.7,
+        ("openlibrary", "quran"): -0.6,
     }
 
     def _get_pairwise_synergy(self, api_a: str, api_b: str) -> float:

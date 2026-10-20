@@ -45,4 +45,8 @@ class NeuralBrainResponse(BaseModel):
     tafakkur_reflection: str
     harmonious_synthesis: str
     citations: List[Dict[str, Any]] = Field(default_factory=list)
+    cross_references: List[Dict[str, Any]] = Field(default_factory=list)
+    apis_consulted: List[str] = Field(default_factory=list)
     quantum_telemetry: Optional[Dict[str, Any]] = None
+    antigravity_verdict: str = Field(default="", description="Antigravity Meta-Cognitive Verdict synthesizing all databases")
+    antigravity_insights: Dict[str, str] = Field(default_factory=dict, description="Structured insights across physics, epistemology, and meaning")

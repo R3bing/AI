@@ -127,7 +127,13 @@ async def neural_brain_think(request: QueryRequest):
     along with full background cognitive flowchart trace.
     """
     from backend.neural_brain.engine import neural_brain
-    return await neural_brain.think_and_reply(query=request.text)
+    return await neural_brain.think_and_reply(
+        query=request.text,
+        target_k=request.max_sources,
+        force_apis=request.force_apis,
+        use_quantum=request.use_quantum,
+        mixer_type=request.mixer_type,
+    )
 
 
 if __name__ == "__main__":

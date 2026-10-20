@@ -5,7 +5,7 @@ Tracks full background cognitive flowcharts and emits unified responses.
 """
 
 import time
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import structlog
 from backend.neural_brain.models import (
     DualityState,
@@ -15,6 +15,7 @@ from backend.neural_brain.models import (
 )
 from backend.neural_brain.duality_balancer import duality_balancer
 from backend.neural_brain.tafakkur_engine import tafakkur_engine
+from backend.neural_brain.antigravity_mimic import antigravity_mimic
 from backend.orchestrator.engine import orchestrator
 from backend.orchestrator.models import QueryRequest
 
@@ -27,9 +28,17 @@ class NeuralCognitiveBrain:
     def __init__(self):
         self.duality_balancer = duality_balancer
         self.tafakkur_engine = tafakkur_engine
+        self.antigravity_mimic = antigravity_mimic
         self.orchestrator = orchestrator
 
-    async def think_and_reply(self, query: str) -> NeuralBrainResponse:
+    async def think_and_reply(
+        self,
+        query: str,
+        target_k: int = 3,
+        force_apis: Optional[List[str]] = None,
+        use_quantum: bool = True,
+        mixer_type: str = "xy_mixer",
+    ) -> NeuralBrainResponse:
         """Executes the full neuro-cognitive flowchart from sensory intake to harmonious synthesis."""
         start_time = time.perf_counter()
         flow_nodes: List[CognitiveFlowNode] = []
@@ -77,8 +86,9 @@ class NeuralCognitiveBrain:
         t0 = time.perf_counter()
         qkw_req = QueryRequest(
             text=query_clean,
-            use_quantum=True,
-            max_sources=3,
+            use_quantum=use_quantum,
+            max_sources=target_k,
+            force_apis=force_apis,
         )
         qkw_res = await self.orchestrator.execute_query(qkw_req)
         flow_nodes.append(
@@ -131,14 +141,27 @@ class NeuralCognitiveBrain:
         )
 
         # -------------------------------------------------------------
-        # 6. Prefrontal Cortex: Balanced Coherent Synthesis
+        # 6. Prefrontal Cortex: Antigravity Meta-Cognitive Synthesis
         # -------------------------------------------------------------
         t0 = time.perf_counter()
+
+        # Generate Antigravity's signature First-Principles & Philosophical Verdict
+        antigravity_verdict, antigravity_insights = self.antigravity_mimic.generate_verdict(
+            query=query_clean,
+            duality=duality,
+            citations=qkw_res.citations,
+            cross_references=qkw_res.cross_references,
+            tafakkur_data=tafakkur_data,
+        )
+
         harmonious_lines = [
             "### ⚖️ The Harmonious Synthesis: Heart & Brain in Balance",
             "",
             f"**Quantum State Superposition:** `{duality.dominant_state}` "
             f"*(Particle/Aql Weight: {duality.particle_probability * 100:.1f}% | Wave/Qalb Weight: {duality.wave_probability * 100:.1f}%)*\n",
+            antigravity_verdict,
+            "",
+            "---",
             "#### 🧠 1. The Factual & Empirical Grounding (Aql):",
             qkw_res.synthesized_answer,
             "",
@@ -165,8 +188,8 @@ class NeuralCognitiveBrain:
                 step_id="STEP_6_PREFRONTAL_CORTEX",
                 phase="Coherent Synthesis",
                 hemisphere="Both (Corpus Callosum)",
-                action_taken="Unified Coherent Emission",
-                output_summary=f"Emitted balanced response in {total_latency:.1f}ms with 100% quantum-classical coherence.",
+                action_taken="Antigravity Meta-Cognitive Synthesis & Coherent Emission",
+                output_summary=f"Emitted definitive verdict across {len(qkw_res.apis_consulted)} databases in {total_latency:.1f}ms.",
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
@@ -187,7 +210,11 @@ class NeuralCognitiveBrain:
             tafakkur_reflection=tafakkur_data["spiritual_psychology_insight"],
             harmonious_synthesis=final_synthesis,
             citations=citations_list,
+            cross_references=[cr.model_dump() for cr in qkw_res.cross_references],
+            apis_consulted=qkw_res.apis_consulted,
             quantum_telemetry=quantum_dict,
+            antigravity_verdict=antigravity_verdict,
+            antigravity_insights=antigravity_insights,
         )
 
 

@@ -64,6 +64,7 @@ class OrchestratorEngine:
                 apis_metadata=apis_metadata,
                 target_k=target_k,
                 force_apis=request.force_apis,
+                mixer_type=getattr(request, "mixer_type", "xy_mixer"),
             )
         else:
             # Classical heuristic selection
