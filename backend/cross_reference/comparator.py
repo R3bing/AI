@@ -45,13 +45,15 @@ class CrossReferenceComparator:
 
     def _fallback_sparse_embedding(self, text: str, dim: int = 256) -> np.ndarray:
         """Deterministic hashing vectorizer for zero-dependency semantic fallback."""
+        import zlib
+
         words = text.lower().replace("\n", " ").split()
         vec = np.zeros(dim, dtype=float)
         if not words:
             return vec
 
         for word in words:
-            h = hash(word) % dim
+            h = zlib.crc32(word.encode("utf-8")) % dim
             vec[h] += 1.0
 
         norm = np.linalg.norm(vec)
