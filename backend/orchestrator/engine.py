@@ -43,16 +43,22 @@ class OrchestratorEngine:
         log = logger.bind(query=query)
         log.info("qkw_pipeline_started")
 
-        # 1. Semantic Vector Cache Check (Qdrant)
-        query_embedding = self.cross_referencer._get_embedding(query)
+        # 1. Neuro-Cognitive Query Parsing & Intent Deconstruction
+        from backend.neural_brain.query_parser import query_parser
+        parsed_query = query_parser.parse(query)
+        log.info("query_cognitively_parsed", intent=parsed_query.cleaned_intent, domains=parsed_query.epistemic_domains)
+
+        # 2. Semantic Vector Cache Check (Qdrant)
+        query_embedding = self.cross_referencer._get_embedding(parsed_query.cleaned_intent or query)
         cached_result = self.vector_memory.lookup_cache(query_embedding, threshold=0.96)
         if cached_result:
             log.info("qkw_cache_hit_returning_cached_response")
             cached_result["cached"] = True
             cached_result["total_latency_ms"] = round((time.perf_counter() - start_time) * 1000.0, 2)
+            cached_result["parsed_query"] = parsed_query.model_dump()
             return QueryResponse(**cached_result)
 
-        # 2. Quantum or Classical API Routing
+        # 3. Quantum or Classical API Routing
         apis_metadata = self.registry.get_api_metadata()
         quantum_telemetry = None
 
@@ -77,22 +83,30 @@ class OrchestratorEngine:
 
         log.info("apis_selected_for_query", selected=selected_api_ids)
 
-        # 3. Asynchronous Parallel API Dispatch
+        # 4. Asynchronous Parallel API Dispatch with Targeted Queries
+        # Each external engine receives clean, domain-adapted search tokens rather than conversational sentences.
         tasks = []
         for api_id in selected_api_ids:
             client = self.registry.get(api_id)
             if client:
-                tasks.append(client.search(query=query, limit=2))
+                targeted_search_term = parsed_query.api_targeted_queries.get(api_id, parsed_query.cleaned_intent or query)
+                tasks.append(client.search(query=targeted_search_term, limit=2))
 
-        # Run all selected APIs concurrently with timeout protection
+        # Run all selected APIs concurrently with resilient timeout protection:
+        # Completed tasks are preserved even if a slower API takes longer.
         results: List[APIResult] = []
         if tasks:
-            api_outputs = await asyncio.gather(*tasks, return_exceptions=True)
-            for out in api_outputs:
-                if isinstance(out, APIResult):
-                    results.append(out)
-                elif isinstance(out, Exception):
-                    log.warning("api_dispatch_exception", error=str(out))
+            task_objs = [asyncio.create_task(t) for t in tasks]
+            done, pending = await asyncio.wait(task_objs, timeout=8.5)
+            for p in pending:
+                p.cancel()
+            for t in done:
+                try:
+                    out = t.result()
+                    if isinstance(out, APIResult):
+                        results.append(out)
+                except Exception as e:
+                    log.warning("api_dispatch_exception", error=str(e))
 
         # Collect citations from all successful APIs
         all_citations: List[SourceCitation] = []
@@ -102,14 +116,22 @@ class OrchestratorEngine:
                 all_citations.extend(r.citations)
                 apis_consulted.append(r.api_name)
 
-        # 4. Cross-Reference & Contradiction Detection
+        # 5. Cross-Reference & Contradiction Detection
         cross_references: List[CrossRefConnection] = self.cross_referencer.compare_citations(all_citations)
 
-        # 5. LLM Synthesis (Ollama local / analytical fallback)
+        # 6. Universal Multi-Provider LLM Synthesis (DeepSeek / Gemini / Groq / OpenAI / Ollama / Cognitive Local)
+        runtime_keys = dict(request.api_keys or {})
+        if request.deepseek_api_key:
+            runtime_keys["deepseek"] = request.deepseek_api_key
+        if request.llm_provider:
+            self.synthesizer.provider = request.llm_provider
+
         synthesized_answer = await self.synthesizer.synthesize(
             query=query,
             citations=all_citations,
             cross_references=cross_references,
+            parsed_query=parsed_query,
+            runtime_keys=runtime_keys,
         )
 
         total_latency = (time.perf_counter() - start_time) * 1000.0
@@ -123,9 +145,12 @@ class OrchestratorEngine:
             "apis_consulted": apis_consulted,
             "cached": False,
             "total_latency_ms": round(total_latency, 2),
+            "parsed_query": parsed_query.model_dump(),
+            "reasoning_trace": self.synthesizer.last_reasoning_trace,
+            "llm_provider_used": self.synthesizer.last_provider_used,
         }
 
-        # 6. Memory Persistence (Vector DB + Knowledge Graph)
+        # 7. Memory Persistence (Vector DB + Knowledge Graph)
         try:
             self.vector_memory.cache_query(query, query_embedding, response_payload)
             self.graph_memory.store_knowledge_triples(query, all_citations, cross_references)

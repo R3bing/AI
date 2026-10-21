@@ -19,11 +19,21 @@ class Settings(BaseModel):
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "8000"))
 
-    # LLM Settings (Ollama)
+    # LLM Settings (Multi-Provider Support: DeepSeek, Gemini, Groq, OpenAI, Ollama)
+    llm_provider: str = os.getenv("LLM_PROVIDER", "auto")  # 'auto', 'deepseek', 'gemini', 'groq', 'openai', 'ollama'
+    deepseek_api_key: Optional[str] = os.getenv("DEEPSEEK_API_KEY", None)
+    deepseek_base_url: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    deepseek_model: str = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")  # 'deepseek-reasoner' (R1) or 'deepseek-chat' (V3)
+    gemini_api_key: Optional[str] = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", None))
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    groq_api_key: Optional[str] = os.getenv("GROQ_API_KEY", None)
+    groq_model: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+    openai_api_key: Optional[str] = os.getenv("OPENAI_API_KEY", None)
+    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    ollama_model: str = os.getenv("OLLAMA_MODEL", "llama3.1")
-    ollama_fallback_model: str = os.getenv("OLLAMA_FALLBACK_MODEL", "qwen2.5")
-    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.1"))
+    ollama_model: str = os.getenv("OLLAMA_MODEL", "deepseek-r1:latest")
+    ollama_fallback_model: str = os.getenv("OLLAMA_FALLBACK_MODEL", "llama3.1")
+    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.2"))
     llm_timeout_seconds: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "45.0"))
 
     # Quantum Router Settings

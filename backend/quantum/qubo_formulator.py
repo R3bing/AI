@@ -27,15 +27,22 @@ class QUBOFormulator:
         self.penalty = cardinality_penalty
 
     def compute_relevance_scores(self, query: str, apis_metadata: List[Dict]) -> Dict[str, float]:
-        """Calculates semantic keyword and domain match scores for each candidate API."""
+        """Calculates semantic keyword and domain match scores for each candidate API using cognitive query decomposition."""
+        from backend.neural_brain.query_parser import query_parser
+        parsed = query_parser.parse(query)
+
         q_lower = query.lower()
+        # Combine original tokens, core entities, and parsed intent
         q_tokens = set(q_lower.replace("?", "").replace(",", "").replace(".", "").split())
+        for ent in parsed.core_entities:
+            q_tokens.update(ent.lower().split())
+
         scores = {}
 
         # Domain specific indicator heuristics
         scientific_keywords = {"quantum", "physics", "algorithm", "qubit", "computer", "math", "equation", "tensor"}
-        biomedical_keywords = {"disease", "cell", "cancer", "protein", "dna", "gene", "virus", "treatment", "medicine", "clinical"}
-        theological_keywords = {"quran", "hadith", "prophet", "islam", "allah", "surah", "verse", "sunnah", "prayer", "faith", "deen"}
+        biomedical_keywords = {"disease", "cell", "cancer", "protein", "dna", "gene", "virus", "treatment", "medicine", "clinical", "brain", "neuron"}
+        theological_keywords = {"quran", "hadith", "prophet", "islam", "allah", "surah", "verse", "sunnah", "prayer", "faith", "deen", "soul", "heart", "ruh", "qalb"}
         space_keywords = {"space", "astronomy", "planet", "galaxy", "cosmology", "telescope", "orbit", "universe", "star", "mars"}
         chemical_keywords = {"chemical", "compound", "molecule", "formula", "drug", "acid", "synthesis", "bonding", "reaction"}
         academic_keywords = {"citation", "paper", "journal", "author", "scholar", "study", "literature", "review"}
@@ -51,28 +58,28 @@ class QUBOFormulator:
 
             # Token overlap with domain tags
             overlap = len(q_tokens.intersection(tags))
-            base_score += overlap * 0.4
+            base_score += overlap * 0.35
 
-            # Domain specific triggers
-            if api_id == "arxiv" and any(k in q_lower for k in scientific_keywords):
-                base_score += 0.8
-            elif api_id == "pubmed" and any(k in q_lower for k in biomedical_keywords):
-                base_score += 0.8
-            elif api_id == "quran" and any(k in q_lower for k in theological_keywords):
+            # Cognitive Domain Affinities from parsed query
+            if api_id == "arxiv" and ("physics" in parsed.epistemic_domains or any(k in q_lower for k in scientific_keywords)):
                 base_score += 0.85
-            elif api_id == "hadith" and any(k in q_lower for k in theological_keywords):
-                base_score += 0.80
-            elif api_id == "nasa" and any(k in q_lower for k in space_keywords):
+            elif api_id == "pubmed" and ("biomedical" in parsed.epistemic_domains or any(k in q_lower for k in biomedical_keywords)):
                 base_score += 0.85
-            elif api_id == "pubchem" and any(k in q_lower for k in chemical_keywords):
+            elif api_id == "quran" and ("theological" in parsed.epistemic_domains or any(k in q_lower for k in theological_keywords)):
+                base_score += 0.90
+            elif api_id == "hadith" and ("theological" in parsed.epistemic_domains or any(k in q_lower for k in theological_keywords)):
                 base_score += 0.85
-            elif api_id == "openalex" and (any(k in q_lower for k in academic_keywords) or any(k in q_lower for k in scientific_keywords)):
+            elif api_id == "nasa" and ("astrophysics" in parsed.epistemic_domains or any(k in q_lower for k in space_keywords)):
+                base_score += 0.85
+            elif api_id == "pubchem" and ("chemistry" in parsed.epistemic_domains or any(k in q_lower for k in chemical_keywords)):
+                base_score += 0.85
+            elif api_id == "openalex" and (any(k in q_lower for k in academic_keywords) or any(k in q_lower for k in scientific_keywords) or "academic" in parsed.epistemic_domains):
                 base_score += 0.75
             elif api_id == "google" and (any(k in q_lower for k in google_keywords) or True):
                 base_score += 0.55  # Google is high-utility global live feed
             elif api_id == "crossref" and (any(k in q_lower for k in crossref_keywords) or any(k in q_lower for k in academic_keywords)):
                 base_score += 0.75
-            elif api_id == "openlibrary" and any(k in q_lower for k in book_keywords):
+            elif api_id == "openlibrary" and ("humanities" in parsed.epistemic_domains or any(k in q_lower for k in book_keywords)):
                 base_score += 0.70
             elif api_id == "wikipedia" and (any(k in q_lower for k in historical_general) or True):
                 base_score += 0.45  # Wikipedia is versatile

@@ -34,28 +34,37 @@ class NeuralCognitiveBrain:
     async def think_and_reply(
         self,
         query: str,
-        target_k: int = 3,
+        target_k: int = 4,
         force_apis: Optional[List[str]] = None,
         use_quantum: bool = True,
         mixer_type: str = "xy_mixer",
+        api_keys: Optional[Dict[str, str]] = None,
+        llm_provider: Optional[str] = None,
+        deepseek_api_key: Optional[str] = None,
     ) -> NeuralBrainResponse:
         """Executes the full neuro-cognitive flowchart from sensory intake to harmonious synthesis."""
         start_time = time.perf_counter()
         flow_nodes: List[CognitiveFlowNode] = []
 
         # -------------------------------------------------------------
-        # 1. Sensory Intake (Thalamus Sensory Filter)
+        # 1. Sensory Intake & Prefrontal Deconstruction (Thalamus Filter)
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         query_clean = query.strip()
         word_count = len(query_clean.split())
+        from backend.neural_brain.query_parser import query_parser
+        parsed_query = query_parser.parse(query_clean)
+        
+        entities_summary = ", ".join(parsed_query.core_entities[:4]) if parsed_query.core_entities else "General inquiry"
+        domains_summary = ", ".join(parsed_query.epistemic_domains) if parsed_query.epistemic_domains else "Universal"
+
         flow_nodes.append(
             CognitiveFlowNode(
                 step_id="STEP_1_THALAMUS",
                 phase="Sensory Intake",
                 hemisphere="Both (Corpus Callosum)",
-                action_taken="Sensory Intake & Token Extraction",
-                output_summary=f"Processed inquiry ({word_count} tokens) across linguistic and semantic pathways.",
+                action_taken="Cognitive Intent Deconstruction & Entity Extraction",
+                output_summary=f"Dissected ({word_count} tokens) into concepts [{entities_summary}] spanning {domains_summary}.",
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
@@ -89,6 +98,10 @@ class NeuralCognitiveBrain:
             use_quantum=use_quantum,
             max_sources=target_k,
             force_apis=force_apis,
+            mixer_type=mixer_type,
+            api_keys=api_keys,
+            llm_provider=llm_provider,
+            deepseek_api_key=deepseek_api_key,
         )
         qkw_res = await self.orchestrator.execute_query(qkw_req)
         flow_nodes.append(
@@ -215,6 +228,9 @@ class NeuralCognitiveBrain:
             quantum_telemetry=quantum_dict,
             antigravity_verdict=antigravity_verdict,
             antigravity_insights=antigravity_insights,
+            parsed_query=parsed_query.model_dump(),
+            reasoning_trace=qkw_res.reasoning_trace,
+            llm_provider_used=qkw_res.llm_provider_used,
         )
 
 

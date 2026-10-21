@@ -50,3 +50,6 @@ class NeuralBrainResponse(BaseModel):
     quantum_telemetry: Optional[Dict[str, Any]] = None
     antigravity_verdict: str = Field(default="", description="Antigravity Meta-Cognitive Verdict synthesizing all databases")
     antigravity_insights: Dict[str, str] = Field(default_factory=dict, description="Structured insights across physics, epistemology, and meaning")
+    parsed_query: Optional[Dict[str, Any]] = Field(default=None, description="Prefrontal decomposition of user inquiry")
+    reasoning_trace: Optional[str] = Field(default=None, description="DeepSeek-R1 Chain-of-Thought reasoning trace")
+    llm_provider_used: str = Field(default="cognitive_fallback", description="LLM provider employed for synthesis")

@@ -11,8 +11,11 @@ class QueryRequest(BaseModel):
     text: str = Field(..., description="The user question or research prompt", min_length=2)
     use_quantum: bool = Field(default=True, description="Enable QAOA quantum routing for API selection")
     force_apis: Optional[List[str]] = Field(default=None, description="Explicitly override API selection")
-    max_sources: int = Field(default=4, ge=1, le=10, description="Maximum number of sources to retrieve")
+    max_sources: int = Field(default=4, ge=1, le=11, description="Maximum number of sources to retrieve")
     mixer_type: str = Field(default="xy_mixer", description="QAOA Mixer Hamiltonian: xy_mixer or standard")
+    llm_provider: Optional[str] = Field(default=None, description="Explicit LLM provider override ('deepseek', 'gemini', 'groq', 'openai', 'ollama')")
+    deepseek_api_key: Optional[str] = Field(default=None, description="Optional DeepSeek API key for runtime synthesis")
+    api_keys: Optional[Dict[str, str]] = Field(default=None, description="Optional runtime API keys for Gemini, Groq, or OpenAI")
 
 
 class SourceCitation(BaseModel):
@@ -71,6 +74,9 @@ class QueryResponse(BaseModel):
     apis_consulted: List[str] = Field(default_factory=list)
     cached: bool = False
     total_latency_ms: float = 0.0
+    parsed_query: Optional[Dict[str, Any]] = None
+    reasoning_trace: Optional[str] = Field(default=None, description="DeepSeek-R1 / CoT reasoning chain-of-thought")
+    llm_provider_used: str = Field(default="cognitive_fallback", description="Provider used for synthesis")
 
 
 class HealthResponse(BaseModel):

@@ -27,9 +27,32 @@ from backend.neural_brain.models import NeuralBrainResponse
 logger = structlog.get_logger(__name__)
 
 
+import sys
+import asyncio
+
+# Ensure UTF-8 output encoding across Windows consoles to eliminate charmap codec errors
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("qkw_backend_starting", version=settings.app_version)
+    
+    # Pre-warm embedding model in background so first query has zero cold-start delay
+    async def _prewarm():
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, orchestrator.cross_referencer._get_embedding, "quantum universe")
+            logger.info("embedding_model_prewarmed_successfully")
+        except Exception as e:
+            logger.warning("prewarming_failed_non_fatal", error=str(e))
+    
+    asyncio.create_task(_prewarm())
     yield
     logger.info("qkw_backend_shutdown")
 
@@ -133,6 +156,9 @@ async def neural_brain_think(request: QueryRequest):
         force_apis=request.force_apis,
         use_quantum=request.use_quantum,
         mixer_type=request.mixer_type,
+        api_keys=request.api_keys,
+        llm_provider=request.llm_provider,
+        deepseek_api_key=request.deepseek_api_key,
     )
 
 
