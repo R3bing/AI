@@ -3,7 +3,7 @@ Exposes /query, /health, /apis, /quantum/route, and /memory/graph endpoints.
 """
 
 from contextlib import asynccontextmanager
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, Query as FastQuery
 from fastapi.middleware.cors import CORSMiddleware
 import structlog
@@ -160,6 +160,40 @@ async def neural_brain_think(request: QueryRequest):
         llm_provider=request.llm_provider,
         deepseek_api_key=request.deepseek_api_key,
     )
+
+
+@app.post("/nas/propose", tags=["NAS Controller AI"])
+async def nas_propose_architecture(
+    request: Optional[dict] = None,
+):
+    """Controller AI Meta-Designer: Proposes a new candidate architecture by sampling
+    hyperparameters and structural building blocks from the search space.
+    """
+    from backend.nas.models import ArchitectureProposalRequest, SearchStrategy
+    from backend.nas.controller import controller_ai
+    req = ArchitectureProposalRequest(**(request or {}))
+    candidate = controller_ai.propose_architecture(req)
+    return {
+        "candidate": candidate.model_dump(),
+        "mermaid_dag": controller_ai.to_mermaid_dag(candidate),
+        "pytorch_code": controller_ai.to_pytorch_code(candidate),
+    }
+
+
+@app.get("/nas/search-space", tags=["NAS Controller AI"])
+async def nas_get_search_space():
+    """Returns the predefined search space building blocks, dimensions, and hyperparameters."""
+    from backend.nas.search_space import search_space
+    return {
+        "block_types": [b.value for b in search_space.block_types],
+        "hidden_dimensions": search_space.hidden_dimensions,
+        "attention_heads": search_space.attention_heads,
+        "activations": [a.value for a in search_space.activations],
+        "normalizations": [n.value for n in search_space.normalizations],
+        "learning_rates": search_space.learning_rates,
+        "optimizers": search_space.optimizers,
+        "precisions": search_space.precisions,
+    }
 
 
 if __name__ == "__main__":
