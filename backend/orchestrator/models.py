@@ -62,6 +62,7 @@ class QuantumRoutingDetails(BaseModel):
     execution_time_ms: float
     backend_used: str = "Qiskit Aer Simulator"
     solution_probabilities: Dict[str, float] = Field(default_factory=dict)
+    physical_qpu_telemetry: Optional[Dict[str, Any]] = Field(default=None, description="Physical IBM Quantum hardware noise, T1/T2, and fidelity metrics")
 
 
 class QueryResponse(BaseModel):

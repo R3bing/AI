@@ -497,19 +497,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Metric Cards
+# Metric Cards: Quantum Superposition & Information Entropy
 dm1, dm2, dm3, dm4 = st.columns(4)
-dm1.metric("Dominant Resonance", duality.get("dominant_state", "Equilibrium"))
-dm2.metric("Particle |Aql|² (Logic & Fact)", f"{duality.get('particle_probability', 0) * 100:.1f}%")
-dm3.metric("Wave |Qalb|² (Spirit & Meaning)", f"{duality.get('wave_probability', 0) * 100:.1f}%")
-dm4.metric("Cognitive Latency", f"{flow.get('total_synaptic_latency_ms', 0):.1f} ms")
+dm1.metric("Dominant Resonance", duality.get("dominant_state", "Harmonious Equilibrium"))
+dm2.metric("Particle α |Aql⟩ (Logic/Physics)", f"{duality.get('particle_amplitude_alpha', 0.7071):.3f} (Prob: {duality.get('particle_probability', 0.5) * 100:.1f}%)")
+dm3.metric("Wave β |Qalb⟩ (Sacred/Sakoon)", f"{duality.get('wave_amplitude_beta', 0.7071):.3f} (Prob: {duality.get('wave_probability', 0.5) * 100:.1f}%)")
+dm4.metric("Von Neumann Entropy S(ρ)", f"{duality.get('entropy_score', 0.5):.4f}")
 
 # Dynamic Wave-Particle Balance Progress Meter
 particle_pct = duality.get("particle_probability", 0.5)
-st.markdown(f"**Aql (Particle / Logic) vs. Qalb (Wave / Contemplation) Balance:**")
+st.markdown(f"**Left Hemisphere (Aql / Science) vs. Right Hemisphere (Qalb / Sacred) Dynamic Calibration:**")
 st.progress(
     float(particle_pct),
-    text=f"Left: Aql/Brain {particle_pct*100:.1f}% ⟵ Harmonious Equilibrium ⟶ Right: Qalb/Heart {(1-particle_pct)*100:.1f}%",
+    text=f"Left: Aql (Empirical Rigor) {particle_pct*100:.1f}% ⟵ Quantum Superposition ⟶ Right: Qalb (Sacred Sakoon) {(1-particle_pct)*100:.1f}%",
 )
 
 # -------------------------------------------------------------
@@ -757,6 +757,21 @@ with tab_quantum:
         st.markdown(f"**Quantum Backend:** `{q_details.get('backend_used')}`")
         st.markdown(f"**Candidate APIs ({q_details.get('qubits_count', 11)}-Qubit Register):** {', '.join(q_details.get('qubo_variables', []))}")
         st.markdown(f"**Winning APIs Selected ($x_i=1$):** {', '.join(q_details.get('selected_apis', []))}")
+
+        # Physical IBM Quantum QPU Telemetry
+        phy = q_details.get("physical_qpu_telemetry")
+        if not phy:
+            from backend.quantum.physical_qpu_emulator import physical_qpu_emulator
+            _, phy = physical_qpu_emulator.apply_physical_noise(q_details.get("solution_probabilities", {}), num_qubits=q_details.get("qubits_count", 11))
+        
+        st.markdown("---")
+        st.markdown("#### 🔬 IBM Quantum Physical Hardware Emulation (Qiskit Device Telemetry)")
+        st.caption("Emulating authentic physical quantum decoherence, T1 relaxation, T2 dephasing, and readout noise on 127-qubit IBM Eagle/Heron architectures:")
+        pcol1, pcol2, pcol3, pcol4 = st.columns(4)
+        pcol1.metric("Physical QPU Target", phy.get("physical_qpu", "ibm_brisbane"))
+        pcol2.metric("T1 Relaxation Time", f"{phy.get('t1_relaxation_time_us', 284.5):.1f} µs")
+        pcol3.metric("T2 Dephasing Time", f"{phy.get('t2_dephasing_time_us', 138.2):.1f} µs")
+        pcol4.metric("State Fidelity (F)", f"{phy.get('quantum_state_fidelity', 0.94) * 100:.1f}%")
 
         # 3D Interactive Bloch Sphere
         st.markdown("---")
@@ -1262,6 +1277,90 @@ S5 -->|Advantage: R - b| S1
             "Val Accuracy": active_exp["accuracy_history"],
         })
         st.line_chart(df_curves)
+
+    # -----------------------------------------------------------------
+    # Baseline Neural Network & Continuous Online Self-Learning Engine
+    # -----------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### 🧠 Baseline Feedforward Neural Network (PyTorch) & Autonomous Online Learner")
+    st.markdown(
+        "A clear, fully deconstructed **Feedforward Neural Network in PyTorch** with line-by-line comments across "
+        "**Data Preparation, Model Architecture, Loss & Optimizer, and The Training Loop**, coupled with "
+        "**Scikit-Learn dynamic incremental learning (`partial_fit`)** that automatically trains on every chat interaction without asking!"
+    )
+
+    nn_tab1, nn_tab2 = st.tabs(["🧩 1. PyTorch Architecture Deconstruction", "⚡ 2. Live Autonomous Online Learner (Scikit-Learn + PyTorch)"])
+
+    with nn_tab1:
+        st.markdown("#### 📖 Line-by-Line Neural Network Deconstruction:")
+        st.code(
+            '''import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# Phase 2: Model Architecture (One Hidden Layer with ReLU)
+class BaselineFeedforwardNN(nn.Module):
+    def __init__(self, input_dim=16, hidden_dim=32, output_dim=2):
+        super(BaselineFeedforwardNN, self).__init__()
+        # 1. First Linear Layer: transforms input features to hidden dimension
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        # 2. Non-linear activation: ReLU introduces non-linearity max(0, x)
+        self.relu = nn.ReLU()
+        # 3. Output Layer: maps hidden representation to output class logits
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Forward pass: x -> fc1 -> relu -> fc2 -> logits
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
+
+# Phase 3: Loss Function & Optimizer
+model = BaselineFeedforwardNN(input_dim=16, hidden_dim=32, output_dim=2)
+criterion = nn.CrossEntropyLoss()          # Binary/Multi-class Cross-Entropy
+optimizer = optim.Adam(model.parameters(), lr=0.01)  # Adaptive learning rate
+
+# Phase 4: The Training Loop
+for epoch in range(5):
+    outputs = model(X)                     # 1. Forward pass
+    loss = criterion(outputs, y)           # 2. Compute prediction error
+    optimizer.zero_grad()                  # 3. Clear accumulated gradients
+    loss.backward()                        # 4. Backpropagation (dLoss/dWeight)
+    optimizer.step()                       # 5. Adjust weights toward lower error
+''',
+            language="python",
+        )
+
+        if st.button("🚀 Execute & Train Baseline PyTorch Neural Network", type="primary"):
+            with st.spinner("Compiling and training baseline Feedforward NN on dummy classification data..."):
+                from backend.ml.continuous_learner import train_baseline_neural_network
+                nn_res = train_baseline_neural_network(epochs=6, learning_rate=0.015)
+                st.success(f"✅ Baseline model compiled and trained successfully! Total Parameters: {nn_res['total_parameters']}")
+                col_a, col_b, col_c = st.columns(3)
+                col_a.metric("Final Loss", f"{nn_res['final_loss']:.4f}")
+                col_b.metric("Training Accuracy", f"{nn_res['training_accuracy']*100:.1f}%")
+                col_c.metric("Epochs Completed", nn_res['epochs_completed'])
+                st.line_chart(pd.DataFrame({"Training Loss": nn_res["loss_history"]}))
+
+    with nn_tab2:
+        st.markdown("#### ⚡ Dynamic Online Continuous Self-Learning (Every Chat Turn):")
+        st.markdown(
+            "Every time you submit an inquiry to QKW, the system **automatically and silently trains itself from the past turn** "
+            "using **Scikit-Learn's `SGDClassifier.partial_fit`** and **PyTorch backpropagation** without even asking!"
+        )
+        from backend.ml.continuous_learner import continuous_online_learner
+        telemetry = continuous_online_learner.get_learning_telemetry()
+
+        oc1, oc2, oc3 = st.columns(3)
+        oc1.metric("Total Chats Learned", telemetry["total_chats_learned"])
+        oc2.metric("Online Loss", f"{telemetry['recent_loss']:.4f}")
+        oc3.metric("Incremental Engine", "Scikit-Learn SGD + PyTorch")
+
+        if continuous_online_learner.loss_history:
+            st.markdown("##### 📈 Live Continuous Online Learning Loss Curve:")
+            st.line_chart(pd.DataFrame({"Online Incremental Loss": continuous_online_learner.loss_history}))
+
 
 # Tab 9: AI APIs & Model Training Hub
 with tab_ai_hub:

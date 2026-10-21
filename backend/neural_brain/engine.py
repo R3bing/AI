@@ -223,6 +223,35 @@ class NeuralCognitiveBrain:
             )
         )
 
+        # -------------------------------------------------------------
+        # 7. Autonomous Continuous Online Learning (Scikit-Learn + PyTorch)
+        # -------------------------------------------------------------
+        t0 = time.perf_counter()
+        try:
+            from backend.ml.continuous_learner import continuous_online_learner
+            online_stats = continuous_online_learner.learn_from_chat_turn(
+                query=query_clean,
+                dominant_mode=duality.dominant_state,
+                sources_count=len(qkw_res.citations),
+                entropy=duality.entropy_score,
+            )
+            flow_nodes.append(
+                CognitiveFlowNode(
+                    step_id="STEP_7_CONTINUOUS_LEARNING",
+                    phase="Online Self-Evolution",
+                    hemisphere="Both (Synaptic Plasticity)",
+                    action_taken="Incremental Online Learning (Scikit-Learn SGD + PyTorch Backprop)",
+                    output_summary=(
+                        f"Auto-trained on interaction #{online_stats['total_chats_learned']} "
+                        f"(Loss: {online_stats['current_loss']}, Predicted: {online_stats['predicted_mode']})."
+                    ),
+                    activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
+                )
+            )
+        except Exception as e:
+            logger.warning("continuous_learning_step_failed", error=str(e))
+            online_stats = None
+
         flowchart = CognitiveFlowchart(
             nodes=flow_nodes,
             total_synaptic_latency_ms=round(total_latency, 2),
@@ -249,6 +278,7 @@ class NeuralCognitiveBrain:
             llm_provider_used=qkw_res.llm_provider_used,
             tafakkur_details=tafakkur_data,
             multi_ai_dialogue=dialogue_res,
+            continuous_learning_telemetry=online_stats,
         )
 
 

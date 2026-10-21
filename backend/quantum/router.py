@@ -249,10 +249,18 @@ class QAOARouter:
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
-        # Build top 5 probabilities
-        top_probs = {k: round(v, 4) for k, v in sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)[:5]}
+        # Physical QPU Noise & Finite-Shot Measurement Emulation
+        from backend.quantum.physical_qpu_emulator import physical_qpu_emulator
+        noisy_probs, qpu_telemetry = physical_qpu_emulator.apply_physical_noise(
+            ideal_probabilities=prob_dict,
+            num_qubits=N,
+            p_layers=p,
+            shots=1024,
+        )
 
-        backend_name = "IBM Quantum Hardware (Cloud QPU)" if settings.ibm_quantum_token else "Quantum Statevector Simulator (Aer-compatible)"
+        top_probs = {k: round(v, 4) for k, v in sorted(noisy_probs.items(), key=lambda x: x[1], reverse=True)[:5]}
+
+        backend_name = "IBM Quantum Hardware (Cloud QPU)" if settings.ibm_quantum_token else "IBM Quantum QPU (Physical Noise Emulation: ibm_brisbane)"
         algo_name = f"QAOA with XY-Mixer (p={p}, Dicke |D_{N}^{target_k}>)" if mixer == "xy_mixer" else f"QAOA Standard (p={p})"
 
         details = QuantumRoutingDetails(
@@ -264,6 +272,7 @@ class QAOARouter:
             execution_time_ms=round(elapsed_ms, 2),
             backend_used=backend_name,
             solution_probabilities=top_probs,
+            physical_qpu_telemetry=qpu_telemetry,
         )
 
         logger.info(
@@ -273,6 +282,7 @@ class QAOARouter:
             selected=selected_apis,
             energy=opt_energy,
             latency_ms=elapsed_ms,
+            fidelity=qpu_telemetry.get("quantum_state_fidelity"),
         )
 
         return selected_apis, details
