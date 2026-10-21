@@ -235,8 +235,9 @@ class OntologicalSpiritualEngine:
             "comparative_tradition": best_entry.comparative_tradition,
             "sufi_psychology_nafs": best_entry.sufi_psychology_nafs,
             "contemplative_questions": best_entry.contemplative_inquiries,
-            "disclaimer": "🕊️ Epistemic & Contemplative Framework: Offered for personal mindfulness, ontological harmony, and spiritual tranquility (Sakoon). Transcends legal rulings (non-fatwa).",
+            "disclaimer": "🕊️ Epistemic & Contemplative Framework: Offered for personal mindfulness, ontological harmony, and spiritual tranquility (Sakoon). Transcends legal rulings (Non-Fatwa / Contemplative Exploration).",
         }
+
 
 
 # Global singleton

@@ -235,7 +235,11 @@ async def nas_run_experiment(
 async def nas_get_experiment_state():
     """Returns the cumulative Pareto frontier and reward history from the NAS experiment."""
     from backend.nas.orchestrator import nas_orchestrator
+    return nas_orchestrator.experiment_state
+
+
 @app.post("/dataset/sample", tags=["Training Data Hub"])
+
 async def add_training_sample(payload: dict):
     """Saves a paired training record (query, grounded synthesis, raw AI completion, citations)
     for model fine-tuning and NAS child training.

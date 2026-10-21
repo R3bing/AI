@@ -1,1 +1,8 @@
 {"turn_index": 1, "timestamp": 1792570122.9340134, "query": "what is quantum entanglement?", "label_mode": "Left Hemisphere Dominant (Aql)", "label_int": 0, "loss": 0.753, "sklearn_prob_qalb": 0.0046}
+{"turn_index": 1, "timestamp": 1792571189.5488396, "query": "what is quantum entanglement?", "label_mode": "Left Hemisphere Dominant (Aql)", "label_int": 0, "loss": 0.6374, "sklearn_prob_qalb": 0.0046}
+{"turn_index": 2, "timestamp": 1792571220.8450375, "query": "How does quantum physics relate to universal harmony and inner peace?", "label_mode": "Equilibrium (Harmonious Dual)", "label_int": 0, "loss": 0.5183, "sklearn_prob_qalb": 0.0044}
+{"turn_index": 1, "timestamp": 1792571392.0213535, "query": "How does quantum physics relate to universal harmony and inner peace?", "label_mode": "Equilibrium (Harmonious Dual)", "label_int": 0, "loss": 0.6359, "sklearn_prob_qalb": 0.0048}
+{"turn_index": 1, "timestamp": 1792571465.4338222, "query": "How does quantum physics relate to universal harmony and inner peace?", "label_mode": "Equilibrium (Harmonious Dual)", "label_int": 0, "loss": 0.6419, "sklearn_prob_qalb": 0.0048}
+{"turn_index": 2, "timestamp": 1792571465.476516, "query": "what is quantum entanglement?", "label_mode": "Left Hemisphere Dominant (Aql)", "label_int": 0, "loss": 0.6996, "sklearn_prob_qalb": 0.0043}
+{"turn_index": 1, "timestamp": 1792571669.6844354, "query": "what is quantum entanglement?", "label_mode": "Left Hemisphere Dominant (Aql)", "label_int": 0, "loss": 0.6275, "sklearn_prob_qalb": 0.0046}
+{"turn_index": 2, "timestamp": 1792571701.0708141, "query": "How does quantum physics relate to universal harmony and inner peace?", "label_mode": "Equilibrium (Harmonious Dual)", "label_int": 0, "loss": 0.6467, "sklearn_prob_qalb": 0.0044}
