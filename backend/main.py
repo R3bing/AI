@@ -196,6 +196,48 @@ async def nas_get_search_space():
     }
 
 
+@app.post("/nas/cycle", tags=["NAS Closed-Loop"])
+async def nas_run_single_cycle(
+    request: Optional[dict] = None,
+    epochs: int = 3,
+):
+    """Executes a complete 5-step closed-loop NAS cycle:
+    Step 1: Architecture Proposal -> Step 2: Child Model Instantiation ->
+    Step 3: Model Training -> Step 4: Performance Evaluation ->
+    Step 5: Feedback Policy Update (REINFORCE).
+    """
+    from backend.nas.models import ArchitectureProposalRequest
+    from backend.nas.orchestrator import nas_orchestrator
+    req = ArchitectureProposalRequest(**(request or {}))
+    cycle_result = nas_orchestrator.run_single_cycle(request=req, epochs=epochs)
+    return cycle_result
+
+
+@app.post("/nas/experiment", tags=["NAS Closed-Loop"])
+async def nas_run_experiment(
+    num_cycles: int = 3,
+    request: Optional[dict] = None,
+    epochs_per_child: int = 2,
+):
+    """Runs an autonomous multi-cycle NAS experiment looping across steps 1 to 5."""
+    from backend.nas.models import ArchitectureProposalRequest
+    from backend.nas.orchestrator import nas_orchestrator
+    req = ArchitectureProposalRequest(**(request or {}))
+    exp_state = nas_orchestrator.run_experiment(
+        num_cycles=num_cycles,
+        request=req,
+        epochs_per_child=epochs_per_child,
+    )
+    return exp_state
+
+
+@app.get("/nas/experiment-state", tags=["NAS Closed-Loop"])
+async def nas_get_experiment_state():
+    """Returns the cumulative Pareto frontier and reward history from the NAS experiment."""
+    from backend.nas.orchestrator import nas_orchestrator
+    return nas_orchestrator.experiment_state
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

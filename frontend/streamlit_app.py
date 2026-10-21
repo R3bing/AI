@@ -429,9 +429,9 @@ if active_response:
     )
 
     # -------------------------------------------------------------
-    # 7 Master Tabs: Merged with Perfection
+    # 8 Master Tabs: Unified with Autonomous NAS Closed-Loop Lab
     # -------------------------------------------------------------
-    tab_syn, tab_flow, tab_quantum, tab_tafakkur, tab_citations, tab_graph, tab_bench = st.tabs([
+    tab_syn, tab_flow, tab_quantum, tab_tafakkur, tab_citations, tab_graph, tab_bench, tab_nas = st.tabs([
         "⚖️ 1. Harmonious Synthesis",
         "🧠 2. Neuro-Cognitive Flowchart",
         "⚛️ 3. Quantum QAOA Telemetry",
@@ -439,6 +439,7 @@ if active_response:
         "📚 5. Citations & Cross-References",
         "🕸️ 6. Knowledge Graph & Quantum Lab",
         "📊 7. Academic Benchmark & Paper Lab",
+        "🧬 8. Autonomous NAS Closed-Loop Lab",
     ])
 
     # Tab 1: Harmonious Synthesis
@@ -893,6 +894,166 @@ Exact Global Optimum & {b_opt['cost']:.4f} & {b_opt['latency_ms']:.1f} & 1.000 \
 \\label{{tab:qaoa_benchmark}}
 \\end{{table}}"""
                 st.code(latex_code, language="latex")
+
+    # Tab 8: Autonomous NAS Closed-Loop Lab
+    with tab_nas:
+        st.markdown("### 🧬 Autonomous Neural Architecture Search (NAS) — 5-Step Closed-Loop Engine")
+        st.markdown(
+            "An autonomous architectural self-evolution cycle connecting **Meta-Design, Instantiation, "
+            "Empirical Fitting, Validation, and Policy Gradient Feedback** into a continuous learning loop:"
+        )
+
+        st.markdown(
+            """
+```mermaid
+graph LR
+    classDef step1 fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#fff;
+    classDef step2 fill:#065f46,stroke:#34d399,stroke-width:2px,color:#fff;
+    classDef step3 fill:#78350f,stroke:#fbbf24,stroke-width:2px,color:#fff;
+    classDef step4 fill:#581c87,stroke:#c084fc,stroke-width:2px,color:#fff;
+    classDef step5 fill:#831843,stroke:#f472b6,stroke-width:2px,color:#fff;
+
+    S1["<b>1. Controller AI</b><br>Architecture Proposal"]:::step1 --> S2["<b>2. Child Model</b><br>Instantiation & Compilation"]:::step2
+    S2 --> S3["<b>3. Model Training</b><br>Empirical Fitting"]:::step3
+    S3 --> S4["<b>4. Performance Evaluation</b><br>Accuracy & Latency"]:::step4
+    S4 --> S5["<b>5. Feedback Loop</b><br>REINFORCE Policy Update"]:::step5
+    S5 -->|Advantage: R - b| S1
+```
+            """
+        )
+
+        st.markdown("#### ⚙️ NAS Closed-Loop Configuration")
+        nas_col1, nas_col2, nas_col3 = st.columns(3)
+        with nas_col1:
+            nas_strat = st.selectbox(
+                "Controller AI Strategy",
+                ["autoregressive_rnn", "transformer_sampler", "evolutionary_genetic"],
+                format_func=lambda x: {
+                    "autoregressive_rnn": "🧠 Autoregressive RNN (Zoph & Le)",
+                    "transformer_sampler": "✨ Transformer Structural Sampler",
+                    "evolutionary_genetic": "🧬 Evolutionary Genetic Agent",
+                }.get(x, x),
+            )
+        with nas_col2:
+            nas_layers = st.slider("Child Network Layer Range", min_value=2, max_value=8, value=(3, 5))
+        with nas_col3:
+            nas_epochs = st.slider("Empirical Fitting Epochs per Child", min_value=1, max_value=6, value=3)
+
+        btn_col1, btn_col2, _ = st.columns([2, 2, 3])
+        run_cycle_btn = btn_col1.button("🚀 Execute 5-Step Closed-Loop Cycle", type="primary", use_container_width=True)
+        run_exp_btn = btn_col2.button("🧬 Run 3-Cycle Autonomous NAS Experiment", use_container_width=True)
+
+        # Session state for NAS results
+        if "last_nas_cycle" not in st.session_state:
+            st.session_state["last_nas_cycle"] = None
+        if "last_nas_exp" not in st.session_state:
+            st.session_state["last_nas_exp"] = None
+
+        if run_cycle_btn:
+            with st.spinner("Executing 5-Step NAS Cycle (Proposal ➔ Instantiation ➔ Training ➔ Evaluation ➔ Feedback)..."):
+                try:
+                    from backend.nas.orchestrator import nas_orchestrator
+                    from backend.nas.models import ArchitectureProposalRequest, SearchStrategy
+                    req = ArchitectureProposalRequest(
+                        strategy=SearchStrategy(nas_strat),
+                        min_layers=nas_layers[0],
+                        max_layers=nas_layers[1],
+                        input_dim=64,
+                        output_dim=10,
+                    )
+                    cycle_res = nas_orchestrator.run_single_cycle(request=req, epochs=nas_epochs)
+                    st.session_state["last_nas_cycle"] = cycle_res.model_dump()
+                    st.success(f"✅ Cycle {cycle_res.cycle_index} completed in {cycle_res.total_cycle_time_ms:.1f} ms!")
+                except Exception as e:
+                    st.error(f"NAS Cycle error: {e}")
+
+        if run_exp_btn:
+            with st.spinner("Running 3-Cycle Autonomous NAS Self-Evolution Experiment..."):
+                try:
+                    from backend.nas.orchestrator import nas_orchestrator
+                    from backend.nas.models import ArchitectureProposalRequest, SearchStrategy
+                    req = ArchitectureProposalRequest(
+                        strategy=SearchStrategy(nas_strat),
+                        min_layers=nas_layers[0],
+                        max_layers=nas_layers[1],
+                        input_dim=64,
+                        output_dim=10,
+                    )
+                    exp_res = nas_orchestrator.run_experiment(num_cycles=3, request=req, epochs_per_child=nas_epochs)
+                    st.session_state["last_nas_exp"] = exp_res.model_dump()
+                    st.success("✅ Multi-cycle NAS experiment completed! Pareto frontier updated.")
+                except Exception as e:
+                    st.error(f"NAS Experiment error: {e}")
+
+        # Render Active Cycle Details
+        active_cycle = st.session_state.get("last_nas_cycle")
+        if active_cycle:
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Cycle Index", f"#{active_cycle.get('cycle_index')}")
+            c2.metric("Validation Accuracy", f"{active_cycle['step_4_evaluation']['val_accuracy'] * 100:.1f}%")
+            c3.metric("Multi-Objective Fitness", f"{active_cycle['step_4_evaluation']['fitness_score']:.4f}")
+            c4.metric("Advantage (R - b)", f"{active_cycle['step_5_feedback']['advantage']:+.4f}")
+
+            st.markdown("---")
+            st.markdown("#### 🔍 Step-by-Step Cycle Audit:")
+
+            # Step 1
+            with st.expander(f"1️⃣ Step 1: Controller AI Architecture Proposal — {active_cycle['step_1_proposal']['name']}", expanded=True):
+                p1 = active_cycle['step_1_proposal']
+                st.markdown(f"**Strategy Used:** `{p1['strategy_used']}` • **Sampled Depth:** `{p1['depth']} blocks` • **Theoretical Params:** `{p1['estimated_parameters']:,}`")
+                st.markdown(f"**Sampled Hyperparameters:** `{p1['hyperparameters']}`")
+                st.markdown("**Sampled Neural Building Blocks:**")
+                for b in p1['blocks']:
+                    st.markdown(f"- **{b['block_id']}**: `{b['block_type']}` ({b['in_features']} ➔ {b['out_features']}) | act=`{b['activation']}` | norm=`{b['normalization']}` | skips=`{b['skip_connections']}`")
+
+            # Step 2
+            with st.expander("2️⃣ Step 2: Child Model Concrete Instantiation & Compilation", expanded=True):
+                s2 = active_cycle['step_2_instantiation']
+                st.markdown(f"**Compilation Status:** `{s2.get('status')}`")
+                st.markdown(f"**Tensor Input Shape:** `{s2.get('input_shape')}` ➔ **Tensor Output Shape:** `{s2.get('output_shape')}`")
+                st.markdown(f"**Concrete PyTorch Parameter Count:** `{s2.get('total_trainable_params', 0):,}`")
+                st.markdown(f"**Skip Residual Adapters Initialized:** `{s2.get('skip_adapters_count', 0)}`")
+
+            # Step 3
+            with st.expander("3️⃣ Step 3: Child Model Dataset Training (Empirical Fitting)", expanded=True):
+                s3 = active_cycle['step_3_training']
+                st.markdown(f"**Epochs Fitted:** `{s3.get('epochs_trained')}` • **Final Loss:** `{s3.get('final_train_loss'):.4f}` • **Train Accuracy:** `{s3.get('train_accuracy', 0)*100:.1f}%` • **Fitting Time:** `{s3.get('training_time_ms', 0):.1f} ms`")
+                if s3.get('loss_history'):
+                    df_loss = pd.DataFrame({"Epoch Loss": s3['loss_history']})
+                    st.line_chart(df_loss)
+
+            # Step 4
+            with st.expander("4️⃣ Step 4: Performance Evaluation & Efficiency Benchmarking", expanded=True):
+                s4 = active_cycle['step_4_evaluation']
+                ec1, ec2, ec3 = st.columns(3)
+                ec1.metric("Validation Accuracy", f"{s4['val_accuracy']*100:.1f}%")
+                ec2.metric("Inference Latency", f"{s4['inference_latency_ms']:.2f} ms")
+                ec3.metric("MACs (Multiply-Accumulates)", f"{s4['macs_count']:,}")
+
+            # Step 5
+            with st.expander("5️⃣ Step 5: Feedback Loop & Controller Policy Gradient Update", expanded=True):
+                s5 = active_cycle['step_5_feedback']
+                fc1, fc2, fc3 = st.columns(3)
+                fc1.metric("Moving Baseline (b)", f"{s5['baseline']:.4f}")
+                fc2.metric("Advantage (R - b)", f"{s5['advantage']:+.4f}")
+                fc3.metric("REINFORCE Policy Loss", f"{s5['policy_loss']:.4f}")
+                st.info(f"Policy weights updated successfully: {'Yes (Weights Perturbed in Advantage Direction)' if s5['policy_updated'] else 'No'}")
+
+        # Render Multi-Cycle Experiment History if available
+        active_exp = st.session_state.get("last_nas_exp")
+        if active_exp and active_exp.get("pareto_frontier"):
+            st.markdown("---")
+            st.markdown("#### 🏆 Discovered Architectures & Pareto Frontier:")
+            df_pareto = pd.DataFrame(active_exp["pareto_frontier"])
+            st.dataframe(df_pareto, use_container_width=True)
+
+            # Convergence Chart
+            st.markdown("#### 📈 Reward & Validation Accuracy Convergence Across Cycles:")
+            df_curves = pd.DataFrame({
+                "Reward": active_exp["reward_history"],
+                "Val Accuracy": active_exp["accuracy_history"],
+            })
+            st.line_chart(df_curves)
 
 else:
     # Welcome & Architectural Overview Dashboard

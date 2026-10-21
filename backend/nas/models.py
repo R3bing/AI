@@ -113,3 +113,57 @@ class ArchitectureProposalRequest(BaseModel):
     max_parameters: Optional[int] = Field(default=None, description="Optional parameter budget ceiling")
     temperature: float = Field(default=1.0, ge=0.05, le=5.0, description="Sampling softmax temperature")
     allow_quantum_blocks: bool = Field(default=True, description="Allow hybrid quantum variational layers")
+
+
+class TrainingMetrics(BaseModel):
+    """Step 3: Metrics gathered during Child Model empirical dataset training."""
+    epochs_trained: int = Field(default=5, description="Number of empirical fitting epochs")
+    final_train_loss: float = Field(default=0.0, description="Final training loss")
+    train_accuracy: float = Field(default=0.0, description="Top-1 accuracy on training batch")
+    loss_history: List[float] = Field(default_factory=list, description="Epoch loss progression")
+    training_time_ms: float = Field(default=0.0, description="Elapsed training duration in milliseconds")
+
+
+class EvaluationMetrics(BaseModel):
+    """Step 4: Performance and efficiency evaluation on validation dataset."""
+    val_accuracy: float = Field(..., ge=0.0, le=1.0, description="Top-1 classification accuracy on validation set")
+    val_loss: float = Field(..., description="Validation cross-entropy loss")
+    inference_latency_ms: float = Field(..., description="Average inference latency per batch (ms)")
+    parameter_count: int = Field(..., description="Exact parameter count of instantiated child model")
+    macs_count: int = Field(..., description="Multiply-Accumulate operations")
+    fitness_score: float = Field(..., description="Multi-objective scalar fitness combining accuracy and efficiency")
+
+
+class RewardFeedback(BaseModel):
+    """Step 5: Feedback signal computed for Controller AI policy gradient update."""
+    raw_metric: float = Field(..., description="Raw validation metric (accuracy)")
+    baseline: float = Field(..., description="Exponential moving average baseline reward")
+    advantage: float = Field(..., description="Advantage = Reward - Baseline")
+    latency_penalty: float = Field(default=1.0, description="Efficiency constraint multiplier")
+    final_reward: float = Field(..., description="Final scalar reward fed to policy gradient")
+    policy_loss: float = Field(default=0.0, description="REINFORCE policy loss value")
+    policy_updated: bool = Field(default=True, description="Whether controller weights were updated")
+
+
+class NASCycleResult(BaseModel):
+    """Complete 5-stage closed-loop execution result for a single NAS cycle."""
+    cycle_index: int = Field(..., description="Sequential cycle iteration index")
+    step_1_proposal: ArchitectureCandidate = Field(..., description="Proposed candidate architecture")
+    step_2_instantiation: Dict[str, Any] = Field(default_factory=dict, description="Instantiation telemetry")
+    step_3_training: TrainingMetrics = Field(..., description="Empirical fitting training telemetry")
+    step_4_evaluation: EvaluationMetrics = Field(..., description="Performance evaluation metrics")
+    step_5_feedback: RewardFeedback = Field(..., description="Feedback loop controller policy update")
+    total_cycle_time_ms: float = Field(default=0.0, description="Total wall-clock duration of cycle")
+
+
+class NASExperimentState(BaseModel):
+    """State and history of an autonomous multi-cycle NAS experiment."""
+    experiment_id: str = Field(..., description="Unique experiment identifier")
+    total_cycles_completed: int = Field(default=0, description="Number of complete 5-step cycles run")
+    best_candidate: Optional[ArchitectureCandidate] = Field(default=None, description="Current Pareto-optimal candidate")
+    best_accuracy: float = Field(default=0.0, description="Highest validation accuracy discovered")
+    best_fitness: float = Field(default=0.0, description="Highest multi-objective fitness score")
+    reward_history: List[float] = Field(default_factory=list, description="Reward progression across cycles")
+    accuracy_history: List[float] = Field(default_factory=list, description="Validation accuracy curve across cycles")
+    pareto_frontier: List[Dict[str, Any]] = Field(default_factory=list, description="Pareto-optimal candidates")
+
