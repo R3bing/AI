@@ -266,3 +266,9 @@ class ContinuousOnlineLearner:
 
 # Global singleton online learner
 continuous_online_learner = ContinuousOnlineLearner()
+
+
+def get_continuous_learner() -> ContinuousOnlineLearner:
+    """Returns the global ContinuousOnlineLearner instance."""
+    return continuous_online_learner
+
