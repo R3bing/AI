@@ -235,7 +235,43 @@ async def nas_run_experiment(
 async def nas_get_experiment_state():
     """Returns the cumulative Pareto frontier and reward history from the NAS experiment."""
     from backend.nas.orchestrator import nas_orchestrator
-    return nas_orchestrator.experiment_state
+@app.post("/dataset/sample", tags=["Training Data Hub"])
+async def add_training_sample(payload: dict):
+    """Saves a paired training record (query, grounded synthesis, raw AI completion, citations)
+    for model fine-tuning and NAS child training.
+    """
+    from backend.synthesis.training_data_generator import training_data_generator
+    sample = training_data_generator.create_paired_sample(
+        query=payload.get("query", ""),
+        grounded_synthesis=payload.get("grounded_synthesis", ""),
+        citations=payload.get("citations", []),
+        raw_ai_completion=payload.get("raw_ai_completion"),
+        dominant_mode=payload.get("dominant_mode", "Aql & Qalb Balanced"),
+        entropy_score=payload.get("entropy_score", 0.5),
+    )
+    return sample
+
+
+@app.get("/dataset/samples", tags=["Training Data Hub"])
+async def list_training_samples():
+    """Lists all stored training samples."""
+    from backend.synthesis.training_data_generator import training_data_generator
+    return {"samples": training_data_generator.get_samples()}
+
+
+@app.get("/dataset/export", tags=["Training Data Hub"])
+async def export_training_dataset(format_type: str = "sft"):
+    """Exports dataset formatted as JSONL string (sft, dpo, or sharegpt)."""
+    from backend.synthesis.training_data_generator import training_data_generator
+    content = training_data_generator.export_as_jsonl(format_type=format_type)
+    return {"format": format_type, "jsonl": content}
+
+
+@app.get("/dataset/stats", tags=["Training Data Hub"])
+async def get_training_dataset_stats():
+    """Returns dataset count, formats supported, and disk location."""
+    from backend.synthesis.training_data_generator import training_data_generator
+    return training_data_generator.get_statistics()
 
 
 if __name__ == "__main__":

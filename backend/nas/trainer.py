@@ -42,6 +42,40 @@ class DatasetFactory:
         val_loader = DataLoader(val_ds, batch_size=32, shuffle=False)
         return train_loader, val_loader
 
+    @staticmethod
+    def get_dataset_from_training_bank(
+        input_dim: int = 128,
+        num_classes: int = 10,
+    ) -> Tuple[DataLoader, DataLoader]:
+        """Constructs PyTorch DataLoaders using accumulated user training data bank."""
+        from backend.synthesis.training_data_generator import training_data_generator
+        samples = training_data_generator.get_samples()
+        if len(samples) < 4:
+            return DatasetFactory.get_benchmark_dataset(input_dim=input_dim, num_classes=num_classes)
+
+        # Hash queries into continuous feature vectors of size input_dim
+        import hashlib
+        X_list = []
+        y_list = []
+        for i, s in enumerate(samples):
+            # Deterministic feature projection from text
+            q_bytes = s.get("query", "").encode("utf-8")
+            hash_vals = [float(int(hashlib.md5(q_bytes + str(j).encode()).hexdigest(), 16) % 1000) / 1000.0 for j in range(input_dim)]
+            X_list.append(hash_vals)
+            # Label based on dominant mode or source hash
+            label = int(hashlib.sha256(s.get("dominant_mode", "").encode()).hexdigest(), 16) % num_classes
+            y_list.append(label)
+
+        X = torch.tensor(X_list, dtype=torch.float32)
+        y = torch.tensor(y_list, dtype=torch.long)
+
+        # Ensure at least small train/val split
+        split_idx = max(1, int(0.75 * len(X)))
+        train_ds = TensorDataset(X[:split_idx], y[:split_idx])
+        val_ds = TensorDataset(X[split_idx:] if split_idx < len(X) else X[:1], y[split_idx:] if split_idx < len(y) else y[:1])
+
+        return DataLoader(train_ds, batch_size=min(16, len(train_ds)), shuffle=True), DataLoader(val_ds, batch_size=min(16, len(val_ds)), shuffle=False)
+
 
 class ChildModelTrainer:
     """Step 3: Empirical fitting trainer for Child Models."""
