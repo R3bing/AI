@@ -77,6 +77,7 @@ class QueryResponse(BaseModel):
     parsed_query: Optional[Dict[str, Any]] = None
     reasoning_trace: Optional[str] = Field(default=None, description="DeepSeek-R1 / CoT reasoning chain-of-thought")
     llm_provider_used: str = Field(default="cognitive_fallback", description="Provider used for synthesis")
+    multi_ai_dialogue: Optional[Dict[str, Any]] = Field(default=None, description="Inter-AI dialogue debate trace across Gemini, DeepSeek, and Groq")
 
 
 class HealthResponse(BaseModel):

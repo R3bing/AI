@@ -106,29 +106,35 @@ STRUCTURE YOUR RESPONSE CLEARLY:
             return False
 
     async def _synthesize_gemini(self, prompt: str, api_key: str) -> Optional[str]:
-        """Calls Google Gemini API (Gemini 2.5 Flash / 1.5 Pro)."""
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={api_key}"
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": settings.llm_temperature,
-                "maxOutputTokens": 2048,
-            },
-        }
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if parts:
-                        text = parts[0].get("text", "").strip()
-                        if text:
-                            logger.info("gemini_synthesis_success", model=self.gemini_model)
-                            return text
-            else:
-                logger.warning("gemini_api_error", status_code=resp.status_code, body=resp.text[:200])
+        """Calls Google Gemini API (Gemini 2.5 Flash / 2.5 Pro)."""
+        candidate_models = list(dict.fromkeys([self.gemini_model, "gemini-2.5-flash", "gemini-2.5-pro"]))
+        for m in candidate_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": settings.llm_temperature,
+                    "maxOutputTokens": 2048,
+                },
+            }
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    resp = await client.post(url, json=payload, headers={"User-Agent": "QuantumKnowledgeWeaver/1.0", "Content-Type": "application/json"})
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                text = parts[0].get("text", "").strip()
+                                if text:
+                                    self.last_provider_used = f"Google Gemini ({m})"
+                                    logger.info("gemini_synthesis_success", model=m)
+                                    return text
+                    else:
+                        logger.warning("gemini_api_error", model=m, status_code=resp.status_code, body=resp.text[:200])
+            except Exception as e:
+                logger.warning("gemini_call_failed", model=m, error=str(e))
         return None
 
     async def _synthesize_groq(self, prompt: str, api_key: str) -> Optional[str]:
@@ -136,9 +142,10 @@ STRUCTURE YOUR RESPONSE CLEARLY:
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
+            "User-Agent": "QuantumKnowledgeWeaver/1.0",
             "Content-Type": "application/json",
         }
-        candidate_models = list(dict.fromkeys([self.groq_model, "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]))
+        candidate_models = list(dict.fromkeys([self.groq_model, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]))
         for target_model in candidate_models:
             payload = {
                 "model": target_model,
@@ -158,6 +165,7 @@ STRUCTURE YOUR RESPONSE CLEARLY:
                         if choices:
                             text = choices[0].get("message", {}).get("content", "").strip()
                             if text:
+                                self.last_provider_used = f"Groq ({target_model})"
                                 logger.info("groq_synthesis_success", model=target_model)
                                 return text
                     else:
@@ -204,6 +212,7 @@ STRUCTURE YOUR RESPONSE CLEARLY:
         url = f"{self.deepseek_base_url.rstrip('/')}/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
+            "User-Agent": "QuantumKnowledgeWeaver/1.0",
             "Content-Type": "application/json",
         }
         target_model = model or self.deepseek_model

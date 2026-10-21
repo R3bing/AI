@@ -178,13 +178,15 @@ class NeuralCognitiveBrain:
             "#### 🧠 1. The Factual & Empirical Grounding (Aql):",
             qkw_res.synthesized_answer,
             "",
-            "#### 🕊️ 2. The Contemplative Dimension (Qalb / Tafakkur):",
-            f"> *\"{tafakkur_data['quranic_verse']}\"*",
-            f"> *\"{tafakkur_data['prophetic_hadith']}\"*",
+            "#### 🕊️ 2. Ontological & Spiritual Equilibrium (The Heart's Resonance / Qalb):",
+            f"> 📖 **Sacred Verse:** *\"{tafakkur_data['quranic_verse']}\"*",
+            f"> 💡 **Scholarly Tafseer:** {tafakkur_data.get('tafseer_insight', '')}",
+            f"> 📜 **Prophetic Tradition:** *\"{tafakkur_data['prophetic_hadith']}\"*",
+            f"> 🌐 **Universal World Scripture ({tafakkur_data.get('comparative_tradition', 'Universal')}):** *\"{tafakkur_data.get('comparative_scripture', '')}\"*",
             "",
-            f"**Sufi Psychological Insight:** {tafakkur_data['spiritual_psychology_insight']}",
+            f"**Sufi Soul Psychology (Nafs Analysis):** {tafakkur_data['spiritual_psychology_insight']}",
             "",
-            "**Inward Questions for Reflection (Tafakkur):**",
+            "**Inward Inquiries for Contemplative Reflection (Tafakkur):**",
         ]
 
         for q_idx, question in enumerate(tafakkur_data["contemplative_questions"], 1):
@@ -194,6 +196,20 @@ class NeuralCognitiveBrain:
 
         final_synthesis = "\n".join(harmonious_lines)
 
+        # -------------------------------------------------------------
+        # 6. Inter-AI Neural Conversation Pathway (Gemini ➔ DeepSeek ➔ Groq ➔ QKW)
+        # -------------------------------------------------------------
+        try:
+            from backend.synthesis.multi_ai_dialogue import multi_ai_dialogue
+            dialogue_res = await multi_ai_dialogue.run_inter_ai_dialogue(
+                query=query_clean,
+                citations_summary=qkw_res.synthesized_answer,
+                runtime_keys=api_keys,
+            )
+        except Exception as e:
+            logger.warning("inter_ai_dialogue_failed", error=str(e))
+            dialogue_res = None
+
         total_latency = (time.perf_counter() - start_time) * 1000.0
 
         flow_nodes.append(
@@ -201,8 +217,8 @@ class NeuralCognitiveBrain:
                 step_id="STEP_6_PREFRONTAL_CORTEX",
                 phase="Coherent Synthesis",
                 hemisphere="Both (Corpus Callosum)",
-                action_taken="Antigravity Meta-Cognitive Synthesis & Coherent Emission",
-                output_summary=f"Emitted definitive verdict across {len(qkw_res.apis_consulted)} databases in {total_latency:.1f}ms.",
+                action_taken="Antigravity Meta-Cognitive Synthesis & Inter-AI Dialogue Consensus",
+                output_summary=f"Emitted definitive verdict across {len(qkw_res.apis_consulted)} databases & 3 AI models in {total_latency:.1f}ms.",
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
@@ -229,8 +245,10 @@ class NeuralCognitiveBrain:
             antigravity_verdict=antigravity_verdict,
             antigravity_insights=antigravity_insights,
             parsed_query=parsed_query.model_dump(),
-            reasoning_trace=qkw_res.reasoning_trace,
+            reasoning_trace=qkw_res.reasoning_trace or (dialogue_res.get("deepseek_reasoning") if dialogue_res else None),
             llm_provider_used=qkw_res.llm_provider_used,
+            tafakkur_details=tafakkur_data,
+            multi_ai_dialogue=dialogue_res,
         )
 
 

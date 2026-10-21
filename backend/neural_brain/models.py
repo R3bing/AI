@@ -53,3 +53,5 @@ class NeuralBrainResponse(BaseModel):
     parsed_query: Optional[Dict[str, Any]] = Field(default=None, description="Prefrontal decomposition of user inquiry")
     reasoning_trace: Optional[str] = Field(default=None, description="DeepSeek-R1 Chain-of-Thought reasoning trace")
     llm_provider_used: str = Field(default="cognitive_fallback", description="LLM provider employed for synthesis")
+    tafakkur_details: Dict[str, Any] = Field(default_factory=dict, description="Full ontological scripture, tafseer, and comparative insights")
+    multi_ai_dialogue: Optional[Dict[str, Any]] = Field(default=None, description="Multi-AI inter-neural dialogue between Gemini, DeepSeek, and Groq")

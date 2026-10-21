@@ -49,26 +49,22 @@ class TafakkurEngine:
     ]
 
     def generate_tafakkur(self, query: str) -> Dict[str, Any]:
-        """Matches query context to deep contemplative reflections and inquiry questions."""
-        q_lower = query.lower()
-
-        # Score themes
-        best_match = self.TAFAKKUR_CORPUS[0]
-        max_overlap = 0
-
-        for item in self.TAFAKKUR_CORPUS:
-            overlap = sum(1 for kw in item["keywords"] if kw in q_lower)
-            if overlap > max_overlap:
-                max_overlap = overlap
-                best_match = item
-
+        """Matches query context to deep contemplative reflections, Tafseers, and world scriptures."""
+        from backend.neural_brain.ontological_spiritual_engine import ontological_spiritual_engine
+        res = ontological_spiritual_engine.match_resonance(query)
         return {
-            "theme": best_match["theme"],
-            "quranic_verse": best_match["ayah"],
-            "prophetic_hadith": best_match["hadith"],
-            "spiritual_psychology_insight": best_match["sufi_insight"],
-            "contemplative_questions": best_match["reflection_questions"],
-            "disclaimer": "Note: Tafakkur reflections are offered for personal mindfulness, contemplation, and spiritual tranquility. Not a legal ruling (Fatwa).",
+            "theme": res["theme"],
+            "quranic_verse": f"{res['quranic_verse']} ({res['surah_reference']})",
+            "surah_reference": res["surah_reference"],
+            "tafseer_insight": res["tafseer_scholarly_insight"],
+            "prophetic_hadith": f"{res['prophetic_hadith']} ({res['hadith_reference']})",
+            "hadith_reference": res["hadith_reference"],
+            "comparative_scripture": res["comparative_scripture"],
+            "comparative_tradition": res["comparative_tradition"],
+            "spiritual_psychology_insight": res["sufi_psychology_nafs"],
+            "contemplative_questions": res["contemplative_questions"],
+            "confidence_score": res["confidence_score"],
+            "disclaimer": res["disclaimer"],
         }
 
 
