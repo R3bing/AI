@@ -1,0 +1,47 @@
+{
+  "current_generation": 1,
+  "parent_fitness": 0.72,
+  "identity_hash": "a9f4c9f070c8c2f6d29fe1ccf955417a4f7cccc2f32f2564640ed74a296ebf07",
+  "lineage_chain": [
+    "a9f4c9f070c8c2f6d29fe1ccf955417a4f7cccc2f32f2564640ed74a296ebf07"
+  ],
+  "last_updated": 1792595407.5222332,
+  "lineage_history": [
+    {
+      "cycle_timestamp": 1792583689.8321164,
+      "evaluated_generation": 2,
+      "succession_occurred": false,
+      "parent_fitness": 0.72,
+      "child_fitness": 0.4636,
+      "verdict": "\ud83d\udee1\ufe0f STABILITY MAINTAINED: Child (Fitness: 0.4636) did not surpass Parent (0.72). Parent Gen 1 retained.",
+      "latency_ms": 16.2
+    },
+    {
+      "cycle_timestamp": 1792583733.0292838,
+      "evaluated_generation": 2,
+      "succession_occurred": false,
+      "parent_fitness": 0.72,
+      "child_fitness": 0.4393,
+      "verdict": "\ud83d\udee1\ufe0f STABILITY MAINTAINED: Child (Fitness: 0.4393) did not surpass Parent (0.72). Parent Gen 1 retained.",
+      "latency_ms": 28.5
+    },
+    {
+      "cycle_timestamp": 1792584251.4915025,
+      "evaluated_generation": 2,
+      "succession_occurred": false,
+      "parent_fitness": 0.72,
+      "child_fitness": 0.5143,
+      "verdict": "\ud83d\udee1\ufe0f STABILITY MAINTAINED: Child (Fitness: 0.5143) did not surpass Parent (0.72). Parent Gen 1 retained.",
+      "latency_ms": 29.6
+    },
+    {
+      "cycle_timestamp": 1792595407.5222216,
+      "evaluated_generation": 2,
+      "succession_occurred": false,
+      "parent_fitness": 0.72,
+      "child_fitness": 0.4169,
+      "verdict": "\u26a0\ufe0f STILLBORN ELIMINATED: Child fitness (0.417) below 90% parent survival threshold (0.648).",
+      "latency_ms": 38.7
+    }
+  ]
+}

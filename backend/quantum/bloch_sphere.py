@@ -14,6 +14,7 @@ def create_bloch_sphere_figure(
     wave_prob: float = 0.5,
     entropy_score: float = 0.5,
     dominant_state: str = "Equilibrium",
+    spiritual_maqam: Optional[str] = None,
 ) -> go.Figure:
     """Constructs an interactive 3D Plotly figure of the Quantum Bloch Sphere."""
     # Quantum Angles
@@ -135,6 +136,10 @@ def create_bloch_sphere_figure(
     )
 
     # 6. Quantum State Vector Tip (Marker)
+    tip_text = f"|Ψ⟩ ({dominant_state})<br>θ={math.degrees(theta):.1f}°, φ={math.degrees(phi):.1f}°"
+    if spiritual_maqam:
+        tip_text += f"<br>🕊️ {spiritual_maqam}"
+
     fig.add_trace(
         go.Scatter3d(
             x=[vx],
@@ -142,7 +147,7 @@ def create_bloch_sphere_figure(
             z=[vz],
             mode="markers+text",
             marker=dict(size=10, color=vector_color, symbol="diamond"),
-            text=[f"|Ψ⟩ ({dominant_state})<br>θ={math.degrees(theta):.1f}°, φ={math.degrees(phi):.1f}°"],
+            text=[tip_text],
             textposition="top center",
             textfont=dict(color="#ffffff", size=12),
             name="Current Statevector Tip",
@@ -150,10 +155,14 @@ def create_bloch_sphere_figure(
     )
 
     # Camera & Layout styling
+    title_text = f"⚛️ 3D Quantum Bloch Sphere Superposition: |Ψ⟩ = {alpha:.3f}|Aql⟩ + {beta:.3f}|Qalb⟩"
+    if spiritual_maqam:
+        title_text += f" | {spiritual_maqam}"
+
     fig.update_layout(
         title=dict(
-            text=f"⚛️ 3D Quantum Bloch Sphere Superposition: |Ψ⟩ = {alpha:.3f}|Aql⟩ + {beta:.3f}|Qalb⟩",
-            font=dict(size=15, color="#f8fafc"),
+            text=title_text,
+            font=dict(size=14, color="#f8fafc"),
         ),
         paper_bgcolor="#0b0f19",
         plot_bgcolor="#0b0f19",

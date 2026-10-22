@@ -20,13 +20,22 @@ class QueryRequest(BaseModel):
 
 class SourceCitation(BaseModel):
     """Individual citation ground truth extracted from an API."""
-    source_id: str
-    source_name: str
+    source_id: str = ""
+    source_name: str = ""
     title: str
     url: Optional[str] = None
     snippet: str
     relevance_score: float = 0.0
     extra_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def __init__(self, **data):
+        if "source" in data and not data.get("source_id"):
+            data["source_id"] = str(data["source"])
+        if not data.get("source_name"):
+            data["source_name"] = str(data.get("source_id", "External Source")).title()
+        if "raw_metadata" in data and not data.get("extra_metadata"):
+            data["extra_metadata"] = data["raw_metadata"]
+        super().__init__(**data)
 
 
 class APIResult(BaseModel):
@@ -63,6 +72,10 @@ class QuantumRoutingDetails(BaseModel):
     backend_used: str = "Qiskit Aer Simulator"
     solution_probabilities: Dict[str, float] = Field(default_factory=dict)
     physical_qpu_telemetry: Optional[Dict[str, Any]] = Field(default=None, description="Physical IBM Quantum hardware noise, T1/T2, and fidelity metrics")
+    cvar_alpha: Optional[float] = Field(default=0.25, description="CVaR (Conditional Value-at-Risk) quantile cutoff")
+    cvar_energy: Optional[float] = Field(default=None, description="Expected energy computed under CVaR alpha-quantile")
+    zne_mitigated_fidelity: Optional[float] = Field(default=None, description="Zero-Noise Extrapolation mitigated fidelity")
+    circuit_exporters: Dict[str, bool] = Field(default_factory=lambda: {"qiskit": True, "cirq": True, "braket_openqasm": True})
 
 
 class QueryResponse(BaseModel):

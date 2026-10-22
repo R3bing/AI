@@ -33,6 +33,8 @@ class Settings(BaseModel):
     ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "deepseek-r1:latest")
     ollama_fallback_model: str = os.getenv("OLLAMA_FALLBACK_MODEL", "llama3.1")
+    strata_base_url: str = os.getenv("STRATA_BASE_URL", "http://127.0.0.1:8080/v1")
+    strata_model: str = os.getenv("STRATA_MODEL", "qwen3.8-flash-next")
     llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.2"))
     llm_timeout_seconds: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "45.0"))
 

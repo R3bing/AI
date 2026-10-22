@@ -212,7 +212,9 @@ class CognitiveQueryParser:
             targeted["quran"] = " ".join(theological_terms[:3])
         else:
             # Map common physics/existential themes to Quranic topics
-            if "universe" in raw_lower or "cosmology" in raw_lower or "creation" in raw_lower:
+            if any(k in raw_lower for k in ["photosynthesis", "chlorophyll", "plant", "vegetation", "botany", "tree", "leaf"]):
+                targeted["quran"] = "plants vegetation green earth rain"
+            elif "universe" in raw_lower or "cosmology" in raw_lower or "creation" in raw_lower:
                 targeted["quran"] = "creation heavens earth universe"
             elif "soul" in raw_lower or "consciousness" in raw_lower or "mind" in raw_lower:
                 targeted["quran"] = "soul ruh heart sight hearing"
@@ -225,7 +227,9 @@ class CognitiveQueryParser:
         if theological_terms:
             targeted["hadith"] = " ".join(theological_terms[:3])
         else:
-            if "heart" in raw_lower or "consciousness" in raw_lower or "soul" in raw_lower:
+            if any(k in raw_lower for k in ["photosynthesis", "chlorophyll", "plant", "vegetation", "botany", "tree", "leaf"]):
+                targeted["hadith"] = "plant tree sow fruit harvest"
+            elif "heart" in raw_lower or "consciousness" in raw_lower or "soul" in raw_lower:
                 targeted["hadith"] = "heart soul contemplation intention"
             elif "universe" in raw_lower or "creation" in raw_lower:
                 targeted["hadith"] = "creation universe heavens"
@@ -235,7 +239,9 @@ class CognitiveQueryParser:
                 targeted["hadith"] = " ".join(substantive_tokens[:3])
 
         # 6. NASA: space, cosmology, planets
-        if physics_terms or "space" in detected_domains or "astrophysics" in detected_domains:
+        if any(k in raw_lower for k in ["photosynthesis", "plant", "vegetation", "botany"]):
+            targeted["nasa"] = "photosynthesis plant space"
+        elif physics_terms or "space" in detected_domains or "astrophysics" in detected_domains:
             targeted["nasa"] = " ".join([t for t in substantive_tokens if t in self.DOMAIN_LEXICONS["astrophysics"]][:3]) or "cosmology universe"
         else:
             targeted["nasa"] = " ".join(substantive_tokens[:3])
@@ -244,7 +250,9 @@ class CognitiveQueryParser:
         targeted["openalex"] = " ".join(substantive_tokens[:4])
 
         # 8. PubChem: Chemical compounds
-        if chemical_terms:
+        if any(k in raw_lower for k in ["photosynthesis", "chlorophyll", "chloroplast"]):
+            targeted["pubchem"] = "chlorophyll"
+        elif chemical_terms:
             targeted["pubchem"] = chemical_terms[0]
         else:
             targeted["pubchem"] = substantive_tokens[0] if substantive_tokens else "compound"
@@ -257,6 +265,36 @@ class CognitiveQueryParser:
 
         # 11. OpenLibrary: historical & philosophical books
         targeted["openlibrary"] = " ".join(substantive_tokens[:3])
+
+        # 12. Semantic Scholar: high-impact academic papers & citation graph
+        targeted["semanticscholar"] = " ".join(substantive_tokens[:4])
+
+        # 13. Wikidata: structured semantic entities
+        targeted["wikidata"] = " ".join(substantive_tokens[:3])
+
+        # 14. DBpedia: linked open data ontology
+        targeted["dbpedia"] = " ".join(substantive_tokens[:3])
+
+        # 15. World Bank: macroeconomic indicators & development
+        targeted["worldbank"] = " ".join(substantive_tokens[:4])
+
+        # 16. Open-Meteo: atmospheric thermodynamics & meteorological reanalysis
+        targeted["openmeteo"] = " ".join(substantive_tokens[:3])
+
+        # 17. Hacker News: engineering critique & practitioner consensus
+        targeted["hackernews"] = " ".join(substantive_tokens[:4])
+
+        # 18. PyPI: Python software package ecosystem
+        targeted["pypi"] = substantive_tokens[0] if substantive_tokens else "python"
+
+        # 19. OSV: Open Source Vulnerability & CVE auditing
+        targeted["osv"] = substantive_tokens[0] if substantive_tokens else "package"
+
+        # 20. Bible: comparative scripture & moral wisdom
+        targeted["bible"] = " ".join(theological_terms[:3]) if theological_terms else " ".join(substantive_tokens[:3])
+
+        # 21. Gutendex: Project Gutenberg classical literature & philosophy
+        targeted["gutendex"] = " ".join(substantive_tokens[:3])
 
         return targeted
 

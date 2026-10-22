@@ -48,10 +48,10 @@ class TafakkurEngine:
         },
     ]
 
-    def generate_tafakkur(self, query: str) -> Dict[str, Any]:
+    def generate_tafakkur(self, query: str, particle_prob: float = 0.5, wave_prob: float = 0.5) -> Dict[str, Any]:
         """Matches query context to deep contemplative reflections, Tafseers, and world scriptures."""
         from backend.neural_brain.ontological_spiritual_engine import ontological_spiritual_engine
-        res = ontological_spiritual_engine.match_resonance(query)
+        res = ontological_spiritual_engine.match_resonance(query, particle_prob=particle_prob, wave_prob=wave_prob)
         return {
             "theme": res["theme"],
             "quranic_verse": f"{res['quranic_verse']} ({res['surah_reference']})",
@@ -63,6 +63,8 @@ class TafakkurEngine:
             "comparative_tradition": res["comparative_tradition"],
             "spiritual_psychology_insight": res["sufi_psychology_nafs"],
             "contemplative_questions": res["contemplative_questions"],
+            "spiritual_station_maqam": res.get("spiritual_station_maqam", "Tafakkur"),
+            "maqam_details": res.get("maqam_details", {}),
             "confidence_score": res["confidence_score"],
             "disclaimer": res["disclaimer"],
         }

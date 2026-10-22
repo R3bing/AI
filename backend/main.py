@@ -1,3 +1,4 @@
+
 """FastAPI Backend Application for Quantum Knowledge Weaver (QKW).
 Exposes /query, /health, /apis, /quantum/route, and /memory/graph endpoints.
 """
@@ -275,7 +276,35 @@ async def export_training_dataset(format_type: str = "sft"):
 async def get_training_dataset_stats():
     """Returns dataset count, formats supported, and disk location."""
     from backend.synthesis.training_data_generator import training_data_generator
-    return training_data_generator.get_statistics()
+@app.get("/public-apis/stats", tags=["Public APIs Catalog"])
+async def get_public_apis_stats():
+    """Returns catalog statistics of 2,238+ public APIs across 52 categories."""
+    from backend.apis.public_apis_catalog import public_apis_catalog
+    return public_apis_catalog.get_statistics()
+
+
+@app.get("/public-apis/search", tags=["Public APIs Catalog"])
+async def search_public_apis(
+    query: str,
+    category: Optional[str] = None,
+    no_auth_only: bool = False,
+    limit: int = 10,
+):
+    """Searches the 2,238+ public APIs catalog."""
+    from backend.apis.public_apis_catalog import public_apis_catalog
+    results = public_apis_catalog.search_apis(query, category=category, no_auth_only=no_auth_only, limit=limit)
+    return {"query": query, "count": len(results), "apis": results}
+
+
+@app.post("/council/arena-session", tags=["Multi-AI Council Majlis"])
+async def run_council_arena_session(payload: dict):
+    """Executes a 5-participant multi-agent council debate observed by the Quantum Observer."""
+    from backend.synthesis.multi_ai_council_arena import multi_ai_council_arena
+    query = payload.get("query", "Universal duality and quantum observation")
+    rounds = int(payload.get("rounds", 1))
+    auto_learn = bool(payload.get("auto_learn", True))
+    result = multi_ai_council_arena.run_council_session(query=query, rounds=rounds, auto_learn=auto_learn)
+    return result
 
 
 if __name__ == "__main__":

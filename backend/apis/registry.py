@@ -15,6 +15,16 @@ from backend.apis.pubchem import PubChemClient
 from backend.apis.google_data import GoogleDataClient
 from backend.apis.crossref import CrossrefClient
 from backend.apis.openlibrary import OpenLibraryClient
+from backend.apis.semanticscholar import SemanticScholarClient
+from backend.apis.wikidata import WikidataClient
+from backend.apis.dbpedia import DBpediaClient
+from backend.apis.worldbank import WorldBankClient
+from backend.apis.openmeteo import OpenMeteoClient
+from backend.apis.hackernews import HackerNewsClient
+from backend.apis.pypi import PyPIClient
+from backend.apis.osv import OSVClient
+from backend.apis.bible import BibleClient
+from backend.apis.gutendex import GutendexClient
 
 
 class APIRegistry:
@@ -36,6 +46,17 @@ class APIRegistry:
         self.register(GoogleDataClient())
         self.register(CrossrefClient())
         self.register(OpenLibraryClient())
+        # Knowledge Improvements (New 10 Free Open-Access Repositories)
+        self.register(SemanticScholarClient())
+        self.register(WikidataClient())
+        self.register(DBpediaClient())
+        self.register(WorldBankClient())
+        self.register(OpenMeteoClient())
+        self.register(HackerNewsClient())
+        self.register(PyPIClient())
+        self.register(OSVClient())
+        self.register(BibleClient())
+        self.register(GutendexClient())
 
     def register(self, client: BaseAPIClient):
         self._clients[client.api_id] = client

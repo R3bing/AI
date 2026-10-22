@@ -52,3 +52,15 @@ htmlcov/
 # Local databases
 qdrant_storage/
 neo4j_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Cloned third-party external data repositories
+data/openjarvis/
+data/strata/
+data/holo-gestures/
+data/public_apis_repo/
+data/Strata-data/
+
+

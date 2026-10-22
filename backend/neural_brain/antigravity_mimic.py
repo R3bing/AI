@@ -26,13 +26,21 @@ class AntigravityCognitiveMimic:
         q_lower = query.lower()
 
         # 1. Determine Core Thematic Domain
+        is_photosynthesis_bioenergetics = any(k in q_lower for k in ["photosynthesis", "chlorophyll", "chloroplast", "plant", "calvin cycle", "thylakoid", "rubisco", "bioenergetics", "light reaction", "dark reaction", "autotroph"])
         is_quantum_physics = any(k in q_lower for k in ["quantum", "physics", "entanglement", "particle", "atom", "wave"])
         is_medicine_bio = any(k in q_lower for k in ["medicine", "health", "disease", "cure", "hygiene", "sunnah", "drug", "biology"])
         is_cosmology_space = any(k in q_lower for k in ["space", "universe", "nasa", "black hole", "galaxy", "cosmos", "cosmology"])
         is_theology_existential = any(k in q_lower for k in ["soul", "god", "allah", "purpose", "stress", "peace", "quran", "death", "life"])
 
         # 2. Extract database coverage
-        sources_used = list(set(c.source_name for c in citations))
+        def _get_source_name(c):
+            if hasattr(c, "source_name"):
+                return c.source_name
+            if isinstance(c, dict):
+                return c.get("source_name") or c.get("source", "Science Repository")
+            return str(c)
+
+        sources_used = list(set(_get_source_name(c) for c in citations if _get_source_name(c)))
         has_google = any("Google" in s for s in sources_used)
         has_arxiv = any("arXiv" in s for s in sources_used)
         has_quran = any("Quran" in s for s in sources_used)
@@ -41,7 +49,25 @@ class AntigravityCognitiveMimic:
         has_nasa = any("NASA" in s for s in sources_used)
 
         # 3. Formulate First-Principles Layer
-        if is_quantum_physics:
+        if is_photosynthesis_bioenergetics:
+            first_principles = (
+                "Photosynthesis is the fundamental bioenergetic transducer of cosmic electromagnetic radiation into terrestrial organic matter "
+                "(6CO₂ + 6H₂O + hν ➔ C₆H₁₂O₆ + 6O₂). In the thylakoid membranes, photons split water at the Oxygen-Evolving Complex of Photosystem II (P680), "
+                "driving an electrochemical proton gradient (ΔpH + ΔΨ) that synthesizes ATP and generates NADPH. Concurrently, quantum biology demonstrates "
+                "long-lived electronic exciton coherence in light-harvesting antenna complexes (such as the Fenna-Matthews-Olson / FMO complex), enabling "
+                "excitation energy to sample multiple spatial trajectories simultaneously in superposition and achieve ~99% quantum yield in reaching the reaction center. "
+                "In the stroma, the Calvin-Benson-Bassham cycle employs RuBisCO to fix atmospheric CO₂ into stable hexose sugars, underpinning the entire planetary trophic web."
+            )
+            existential_compass = (
+                "This thermodynamic phenomenon resonates deeply with the Quranic insight in Surah Al-An'am (6:99) and Surah Ya-Sin (36:80): "
+                "the green pigment ('al-Khadir' / chlorophyll) traps celestial solar radiation into stable organic bonds, storing cosmic fire inside green trees. "
+                "Empirical biophysics maps the Z-scheme redox cascade, while contemplative awareness perceives the profound cosmic balance (Mizan) and sustenance (Rizq)."
+            )
+            frontier_boundary = (
+                "The research frontier centers on artificial photosynthesis: bio-inspired photoelectrochemical cells, synthetic RuBisCO variants with reduced "
+                "photorespiratory oxygenation, and optimizing microgravity plant growth systems (e.g. NASA APEX-09) for closed-loop space biospheres."
+            )
+        elif is_quantum_physics:
             first_principles = (
                 "At the fundamental scale, reality exhibits irreducible non-locality and wave-particle duality. "
                 "Individual entities cannot be described as isolated particles with definite counterfactual trajectories; "

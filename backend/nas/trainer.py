@@ -158,5 +158,42 @@ class ChildModelTrainer:
         # Default fallback
         return torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
 
+    def train_with_distillation(
+        self,
+        model: ConcreteChildNetwork,
+        teacher_model: Optional[nn.Module] = None,
+        train_loader: Optional[DataLoader] = None,
+        epochs: Optional[int] = None,
+        temperature: float = 3.0,
+        alpha: float = 0.7,
+        use_lora: bool = False,
+        lora_rank: int = 4,
+    ) -> Dict[str, Any]:
+        """Trains the instantiated child model using Hinton Knowledge Distillation (Step 3 with dark knowledge)."""
+        from backend.ml.distillation_engine import distillation_engine
+        num_epochs = epochs or self.default_epochs
+        hparams = model.candidate.hyperparameters
+        if train_loader is None:
+            in_dim = model.candidate.blocks[0].in_features
+            num_classes = model.candidate.blocks[-1].out_features
+            train_loader, _ = DatasetFactory.get_benchmark_dataset(
+                num_samples=320,
+                input_dim=in_dim,
+                num_classes=num_classes,
+            )
+        distill_res = distillation_engine.run_distillation_experiment(
+            student_model=model,
+            teacher_model=teacher_model,
+            train_loader=train_loader,
+            epochs=num_epochs,
+            temperature=temperature,
+            alpha=alpha,
+            learning_rate=hparams.learning_rate,
+            use_lora=use_lora,
+            lora_rank=lora_rank,
+        )
+        return distill_res
+
 
 child_trainer = ChildModelTrainer()
+

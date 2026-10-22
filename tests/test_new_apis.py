@@ -105,3 +105,102 @@ def test_antigravity_mimic_verdict():
     assert "First-Principles" in verdict
     assert "first_principles" in insights
     assert "frontier_boundary" in insights
+
+
+def test_api_registry_expanded_to_21_repositories():
+    from backend.apis.registry import registry
+    api_ids = registry.list_api_ids()
+    assert len(api_ids) == 21
+    expected = [
+        "wikipedia", "arxiv", "quran", "hadith", "pubmed", "nasa", "openalex", "pubchem",
+        "google", "crossref", "openlibrary", "semanticscholar", "wikidata", "dbpedia",
+        "worldbank", "openmeteo", "hackernews", "pypi", "osv", "bible", "gutendex"
+    ]
+    for exp in expected:
+        assert exp in api_ids, f"Missing registered API client: {exp}"
+
+
+@pytest.mark.asyncio
+async def test_all_10_new_api_clients():
+    from backend.apis.semanticscholar import SemanticScholarClient
+    from backend.apis.wikidata import WikidataClient
+    from backend.apis.dbpedia import DBpediaClient
+    from backend.apis.worldbank import WorldBankClient
+    from backend.apis.openmeteo import OpenMeteoClient
+    from backend.apis.hackernews import HackerNewsClient
+    from backend.apis.pypi import PyPIClient
+    from backend.apis.osv import OSVClient
+    from backend.apis.bible import BibleClient
+    from backend.apis.gutendex import GutendexClient
+
+    clients = [
+        (SemanticScholarClient(), "quantum mechanics"),
+        (WikidataClient(), "photosynthesis"),
+        (DBpediaClient(), "chlorophyll"),
+        (WorldBankClient(), "gdp economy"),
+        (OpenMeteoClient(), "geneva weather"),
+        (HackerNewsClient(), "quantum computing"),
+        (PyPIClient(), "torch numpy"),
+        (OSVClient(), "requests"),
+        (BibleClient(), "creation light"),
+        (GutendexClient(), "plato"),
+    ]
+
+    for client, q in clients:
+        res = await client.search(q, limit=1)
+        assert res.success is True, f"{client.api_id} search failed"
+        assert len(res.citations) >= 1, f"{client.api_id} returned no citations"
+        cit = res.citations[0]
+        assert cit.title, f"{client.api_id} citation missing title"
+        assert cit.snippet, f"{client.api_id} citation missing snippet"
+        assert cit.url, f"{client.api_id} citation missing URL"
+
+
+def test_retrieval_enhancer_deduplication_and_ranking():
+    from backend.apis.retrieval_enhancer import retrieval_enhancer
+
+    raw_citations = [
+        {
+            "title": "Quantum Exciton Coherence in Photosynthetic Systems",
+            "source": "arxiv",
+            "snippet": "Coherent energy transfer occurs in photosynthetic antennae with long-lived quantum coherence.",
+            "url": "https://arxiv.org/abs/2001.0001",
+            "doi": "10.1038/s41586-024-001",
+        },
+        {
+            # Exact DOI duplicate from Crossref
+            "title": "Quantum Exciton Coherence in Photosynthetic Systems (Journal Version)",
+            "source": "crossref",
+            "snippet": "Short summary",
+            "url": "https://doi.org/10.1038/s41586-024-001",
+            "doi": "10.1038/s41586-024-001",
+        },
+        {
+            # Title near-duplicate
+            "title": "Quantum Exciton Coherence in Photosynthetic Systems and Antennae",
+            "source": "semanticscholar",
+            "snippet": "Detailed analysis of FMO complex quantum exciton dynamics and energy transfer.",
+            "url": "https://semanticscholar.org/paper/123",
+            "doi": "",
+        },
+        {
+            # Distinct citation
+            "title": "Solar Energy Conversion by Natural Light-Harvesting Complexes",
+            "source": "pubmed",
+            "snippet": "Biochemical mechanisms of reaction center charge separation in purple bacteria.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/987654",
+            "doi": "10.1016/j.cell.2023.01",
+        },
+    ]
+
+    # Test deduplication
+    deduped = retrieval_enhancer.deduplicate_citations(raw_citations)
+    # The duplicate DOI and near-duplicate title should be merged/filtered out
+    assert len(deduped) < len(raw_citations)
+    assert len(deduped) == 2
+
+    # Test re-ranking
+    ranked = retrieval_enhancer.rank_and_score_citations(deduped, query="quantum exciton photosynthesis")
+    assert len(ranked) == 2
+    assert ranked[0]["composite_rank_score"] >= ranked[1]["composite_rank_score"]
+    assert "composite_rank_score" in ranked[0]

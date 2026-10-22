@@ -47,50 +47,62 @@ class NeuralCognitiveBrain:
         flow_nodes: List[CognitiveFlowNode] = []
 
         # -------------------------------------------------------------
-        # 1. Sensory Intake & Prefrontal Deconstruction (Thalamus Filter)
+        # -------------------------------------------------------------
+        # 1. Biological Brain Circuitry: Sensory Gating & Salience (Thalamocortical Loop)
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         query_clean = query.strip()
         word_count = len(query_clean.split())
         from backend.neural_brain.query_parser import query_parser
         parsed_query = query_parser.parse(query_clean)
-        
-        entities_summary = ", ".join(parsed_query.core_entities[:4]) if parsed_query.core_entities else "General inquiry"
-        domains_summary = ", ".join(parsed_query.epistemic_domains) if parsed_query.epistemic_domains else "Universal"
-
-        flow_nodes.append(
-            CognitiveFlowNode(
-                step_id="STEP_1_THALAMUS",
-                phase="Sensory Intake",
-                hemisphere="Both (Corpus Callosum)",
-                action_taken="Cognitive Intent Deconstruction & Entity Extraction",
-                output_summary=f"Dissected ({word_count} tokens) into concepts [{entities_summary}] spanning {domains_summary}.",
-                activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
-            )
-        )
 
         # -------------------------------------------------------------
         # 2. Wave-Particle Duality State Allocation
         # -------------------------------------------------------------
-        t0 = time.perf_counter()
         duality: DualityState = self.duality_balancer.compute_duality(query_clean)
+
+        # Execute full biological human brain cycle (TRN Gating, Somatic Governor, Hippocampal LTP/LTD, Tri-Network DMN/CEN)
+        from backend.neural_brain.biological_brain_circuitry import biological_brain
+        bio_brain_telemetry = biological_brain.process_cognitive_cycle(
+            raw_query=query_clean,
+            particle_prob=duality.particle_probability,
+            wave_prob=duality.wave_probability,
+        )
+
+        entities_summary = ", ".join(parsed_query.core_entities[:4]) if parsed_query.core_entities else "General inquiry"
+        domains_summary = ", ".join(parsed_query.epistemic_domains) if parsed_query.epistemic_domains else "Universal"
+        gating_ratio = bio_brain_telemetry["thalamocortical_salience_gate"]["sensory_gating_ratio"]
+
         flow_nodes.append(
             CognitiveFlowNode(
-                step_id="STEP_2_DUALITY_ALLOCATION",
+                step_id="STEP_1_THALAMUS_SENSORY_GATE",
+                phase="Sensory Intake",
+                hemisphere="Both (Corpus Callosum)",
+                action_taken="Thalamocortical Sensory Gating & Salience Filter",
+                output_summary=(
+                    f"TRN Gating Ratio: {gating_ratio*100:.1f}% (Signal:Noise = {bio_brain_telemetry['thalamocortical_salience_gate']['signal_to_noise_ratio']}). "
+                    f"Dissected ({word_count} tokens) into concepts [{entities_summary}] spanning {domains_summary}."
+                ),
+                activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
+            )
+        )
+
+        flow_nodes.append(
+            CognitiveFlowNode(
+                step_id="STEP_2_DUALITY_TRI_NETWORK",
                 phase="Duality Allocation",
                 hemisphere="Both (Corpus Callosum)",
-                action_taken="Quantum Wave-Particle State Superposition",
+                action_taken="Quantum Wave-Particle Superposition & Tri-Network Brain Switch",
                 output_summary=(
-                    f"Superposition State: {duality.dominant_state} | "
-                    f"Particle |Aql|² = {duality.particle_probability * 100:.1f}%, "
-                    f"Wave |Qalb|² = {duality.wave_probability * 100:.1f}%."
+                    f"Superposition: {duality.dominant_state} (|Aql|² = {duality.particle_probability * 100:.1f}%, |Qalb|² = {duality.wave_probability * 100:.1f}%). "
+                    f"Active Cortical Network: {bio_brain_telemetry['tri_network_brain_state']['active_network']}."
                 ),
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
 
         # -------------------------------------------------------------
-        # 3. Left Hemisphere (Particle / Aql / QAOA & API Orchestration)
+        # 3. Left Hemisphere (Particle / Aql / QAOA + CVaR + ZNE & API Orchestration)
         # -------------------------------------------------------------
         t0 = time.perf_counter()
         qkw_req = QueryRequest(
@@ -104,50 +116,88 @@ class NeuralCognitiveBrain:
             deepseek_api_key=deepseek_api_key,
         )
         qkw_res = await self.orchestrator.execute_query(qkw_req)
+
+        # VQE Molecular ground state calculation if molecular / chemical query
+        vqe_molecular_sim = None
+        q_lower = query_clean.lower()
+        if any(w in q_lower for w in ["photosynthesis", "chlorophyll", "co2", "h2", "lih", "molecule", "chemical", "atp"]):
+            try:
+                from backend.quantum.vqe_molecular_engine import vqe_molecular_engine
+                target_mol = "CO2" if "co2" in q_lower or "photo" in q_lower else ("LIH" if "lih" in q_lower else "H2")
+                vqe_molecular_sim = vqe_molecular_engine.solve_ground_state(target_mol)
+            except Exception as e:
+                logger.warning("vqe_molecular_solver_exception", error=str(e))
+
         flow_nodes.append(
             CognitiveFlowNode(
                 step_id="STEP_3_LEFT_HEMISPHERE",
                 phase="Hemispheric Processing",
                 hemisphere="Left (Brain/Aql)",
-                action_taken="QAOA Quantum Routing & Multi-Source Empirical Retrieval",
+                action_taken="QAOA (CVaR + ZNE) Quantum Routing & Empirical Retrieval",
                 output_summary=(
-                    f"Quantum Router consulted: {', '.join(qkw_res.apis_consulted)}. "
-                    f"Extracted {len(qkw_res.citations)} authoritative citations in {qkw_res.total_latency_ms:.1f}ms."
+                    f"QAOA consulted: {', '.join(qkw_res.apis_consulted)}. "
+                    f"Extracted {len(qkw_res.citations)} citations in {qkw_res.total_latency_ms:.1f}ms"
+                    + (f" | VQE Ground State {vqe_molecular_sim['molecule']}: {vqe_molecular_sim['vqe_ground_state_hartree']} Ha" if vqe_molecular_sim else "")
+                    + "."
                 ),
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
 
         # -------------------------------------------------------------
-        # 4. Right Hemisphere (Wave / Qalb / Tafakkur Contemplation)
+        # 4. Right Hemisphere (Wave / Qalb / Sacred Tafakkur & Maqamat al-Qalb)
         # -------------------------------------------------------------
         t0 = time.perf_counter()
-        tafakkur_data = self.tafakkur_engine.generate_tafakkur(query_clean)
+        tafakkur_data = self.tafakkur_engine.generate_tafakkur(
+            query_clean,
+            particle_prob=duality.particle_probability,
+            wave_prob=duality.wave_probability,
+        )
         flow_nodes.append(
             CognitiveFlowNode(
                 step_id="STEP_4_RIGHT_HEMISPHERE",
                 phase="Hemispheric Processing",
                 hemisphere="Right (Heart/Qalb)",
-                action_taken="Tafakkur & Spiritual Psychology Resonator",
-                output_summary=f"Activated contemplative resonance on theme '{tafakkur_data['theme']}'.",
+                action_taken="Sacred Tafakkur & 7 Spiritual Stations of the Heart",
+                output_summary=(
+                    f"Resonance theme: '{tafakkur_data['theme']}' | "
+                    f"Spiritual Station (Maqam): {tafakkur_data.get('spiritual_station_maqam', 'Tafakkur')}."
+                ),
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
         )
 
         # -------------------------------------------------------------
-        # 5. Corpus Callosum (Synaptic Cross-Bridge)
+        # 5. Corpus Callosum (Synaptic Cross-Bridge, Quantum Kernel & CRAG)
         # -------------------------------------------------------------
         t0 = time.perf_counter()
+
+        # Quantum Kernel Non-Linear Feature Map
+        from backend.quantum.quantum_kernel import quantum_kernel_engine
+        q_kernel_results = quantum_kernel_engine.cross_reference_quantum_kernel(
+            query_clean, [c.model_dump() for c in qkw_res.citations]
+        )
+
+        # Self-RAG & Corrective RAG (CRAG) Evaluation
+        from backend.cross_reference.hyde_crag_engine import crag_evaluator
+        crag_report = crag_evaluator.evaluate_retrieval(query_clean, qkw_res.citations, qkw_res.cross_references)
+
+        # Universe Knowledge Graph Ingestion & Topological Sync
+        from backend.memory.universe_knowledge_graph import universe_knowledge_graph
+        universe_knowledge_graph.merge_citations(qkw_res.citations, query_clean)
+        ukg_stats = universe_knowledge_graph.get_graph_stats()
+
         num_cross_refs = len(qkw_res.cross_references)
         flow_nodes.append(
             CognitiveFlowNode(
                 step_id="STEP_5_CORPUS_CALLOSUM",
                 phase="Corpus Callosum Synapse",
                 hemisphere="Both (Corpus Callosum)",
-                action_taken="Cross-Domain Synaptic Bridging",
+                action_taken="Cross-Domain Synaptic Bridging, Quantum Kernel & CRAG Evaluator",
                 output_summary=(
-                    f"Correlated {num_cross_refs} semantic links bridging scientific data "
-                    f"with theological and philosophical insights."
+                    f"Correlated {num_cross_refs} semantic links. "
+                    f"CRAG Grade: {crag_report['factuality_grade']} ({crag_report['crag_action']}) | "
+                    f"Universe KG: {ukg_stats['total_nodes']} nodes, {ukg_stats['total_edges']} edges."
                 ),
                 activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
             )
@@ -234,12 +284,14 @@ class NeuralCognitiveBrain:
                 dominant_mode=duality.dominant_state,
                 sources_count=len(qkw_res.citations),
                 entropy=duality.entropy_score,
+                grounded_synthesis=final_synthesis,
+                citations=[c.model_dump() for c in qkw_res.citations],
             )
             flow_nodes.append(
                 CognitiveFlowNode(
                     step_id="STEP_7_CONTINUOUS_LEARNING",
-                    phase="Online Self-Evolution",
-                    hemisphere="Both (Synaptic Plasticity)",
+                    phase="Coherent Synthesis",
+                    hemisphere="Both (Corpus Callosum)",
                     action_taken="Incremental Online Learning (Scikit-Learn SGD + PyTorch Backprop)",
                     output_summary=(
                         f"Auto-trained on interaction #{online_stats['total_chats_learned']} "
@@ -251,6 +303,37 @@ class NeuralCognitiveBrain:
         except Exception as e:
             logger.warning("continuous_learning_step_failed", error=str(e))
             online_stats = None
+
+        # -------------------------------------------------------------
+        # 8. Autopoietic Organism Cycle (h_t, DNC Memory, Metacortex)
+        # -------------------------------------------------------------
+        t0 = time.perf_counter()
+        try:
+            from backend.autopoiesis.organism_orchestrator import autopoietic_organism
+            autopoietic_stats = autopoietic_organism.process_turn(
+                query=query_clean,
+                dominant_mode=duality.dominant_state,
+                entropy=duality.entropy_score,
+                latency_ms=total_latency,
+            )
+            flow_nodes.append(
+                CognitiveFlowNode(
+                    step_id="STEP_8_AUTOPOIETIC_CYCLE",
+                    phase="Coherent Synthesis",
+                    hemisphere="Both (Corpus Callosum)",
+                    action_taken="Autopoietic Latent Identity Update & Metacortex Self-Prediction",
+                    output_summary=(
+                        f"Step #{autopoietic_stats['cognitive_age_steps']} | Gen {autopoietic_stats['active_generation']} | "
+                        f"Health: {autopoietic_stats['autopoietic_health_score']*100:.1f}% | "
+                        f"Self-Pred Error: {autopoietic_stats['self_prediction_error']:.3f} | "
+                        f"Immune: {autopoietic_stats['immune_status']}"
+                    ),
+                    activation_energy=round((time.perf_counter() - t0) * 1000.0, 2),
+                )
+            )
+        except Exception as e:
+            logger.warning("autopoietic_cycle_failed", error=str(e))
+            autopoietic_stats = None
 
         flowchart = CognitiveFlowchart(
             nodes=flow_nodes,
@@ -279,6 +362,12 @@ class NeuralCognitiveBrain:
             tafakkur_details=tafakkur_data,
             multi_ai_dialogue=dialogue_res,
             continuous_learning_telemetry=online_stats,
+            autopoietic_telemetry=autopoietic_stats,
+            biological_brain_telemetry=bio_brain_telemetry,
+            crag_retrieval_evaluation=crag_report,
+            vqe_molecular_simulation=vqe_molecular_sim,
+            quantum_kernel_analysis=q_kernel_results,
+            universe_knowledge_graph_stats=ukg_stats,
         )
 
 

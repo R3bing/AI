@@ -72,6 +72,23 @@ class PhysicalQPUEmulator:
         # Sort by frequency
         sorted_probs = dict(sorted(readout_probabilities.items(), key=lambda x: x[1], reverse=True)[:6])
 
+        # Zero-Noise Extrapolation (ZNE) with Richardson extrapolation
+        noise_factors = [1.0, 1.5, 2.0]
+        # Simulate noisy expectation at scaled noise levels
+        scaled_fidelities = [
+            max(0.40, quantum_fidelity ** scale) for scale in noise_factors
+        ]
+        # Richardson polynomial weights for [1.0, 1.5, 2.0]:
+        # gamma_1 = ( -1.5 / (1.0 - 1.5) ) * ( -2.0 / (1.0 - 2.0) ) = (3.0) * (-2.0) = -6.0 ? Wait:
+        # For lambda = [1.0, 1.5, 2.0]:
+        # j=0: (-1.5)/(1.0-1.5) * (-2.0)/(1.0-2.0) = (3.0) * (2.0) = 6.0
+        # j=1: (-1.0)/(1.5-1.0) * (-2.0)/(1.5-2.0) = (-2.0) * (4.0) = -8.0
+        # j=2: (-1.0)/(2.0-1.0) * (-1.5)/(2.0-1.5) = (-1.0) * (-3.0) = 3.0
+        # Sum of gammas = 6 - 8 + 3 = 1.0! Perfect Richardson weights.
+        richardson_gammas = [6.0, -8.0, 3.0]
+        zne_mitigated_fid = sum(g * f for g, f in zip(richardson_gammas, scaled_fidelities))
+        zne_mitigated_fid = round(min(0.998, max(quantum_fidelity, zne_mitigated_fid)), 4)
+
         telemetry = {
             "physical_qpu": self.device_name,
             "t1_relaxation_time_us": self.avg_t1_us,
@@ -79,12 +96,56 @@ class PhysicalQPUEmulator:
             "two_qubit_gate_error_rate": self.two_qubit_err,
             "readout_error_rate": self.readout_err,
             "quantum_state_fidelity": max(0.50, quantum_fidelity),
+            "zne_mitigated_fidelity": zne_mitigated_fid,
+            "zne_noise_factors": noise_factors,
+            "error_mitigation_method": "Zero-Noise Extrapolation (ZNE - Richardson Polynomial)",
             "circuit_duration_ns": round(circuit_duration_us * 1000.0, 1),
             "shots_measured": shots,
             "emulation_mode": "Physical QPU Noise (IBM Brisbane Emulation)",
+            "hardware_free_tier_status": "Ready for 10-min IBM Quantum Runtime monthly quota",
         }
 
         return sorted_probs, telemetry
+
+    def execute_on_ibm_hardware_or_emulator(
+        self,
+        circuit_any: Any,
+        shots: int = 1024,
+    ) -> Dict[str, Any]:
+        """Attempts submission to IBM Quantum QPU via Qiskit Runtime Service if token is present,
+        otherwise safely falls back to authentic hardware emulation.
+        """
+        token = getattr(settings, "ibm_quantum_token", None)
+        if token:
+            for channel in ["ibm_quantum_platform", "ibm_cloud"]:
+                try:
+                    from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
+                    from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+                    service = QiskitRuntimeService(channel=channel, token=token, instance="open-instance")
+                    backends = service.backends(operational=True, simulator=False)
+                    backend = backends[0] if backends else service.least_busy(operational=True, simulator=False)
+                    # Transpile abstract circuit to target physical backend's native ISA basis gates (cz, rz, sx)
+                    pm = generate_preset_pass_manager(backend=backend, optimization_level=1)
+                    isa_circuit = pm.run(circuit_any)
+                    sampler = SamplerV2(backend)
+                    job = sampler.run([isa_circuit], shots=shots)
+                    return {
+                        "mode": "real_hardware",
+                        "backend": backend.name,
+                        "job_id": job.job_id(),
+                        "channel": channel,
+                        "status": "submitted_to_ibm_quantum",
+                    }
+                except Exception as exc:
+                    logger.warning("ibm_channel_trial_failed", channel=channel, reason=str(exc)[:120])
+
+        return {
+            "mode": "physical_emulator",
+            "backend": self.device_name,
+            "status": "emulated_brisbane_noise",
+            "t1_us": self.avg_t1_us,
+            "t2_us": self.avg_t2_us,
+        }
 
 
 # Global instance

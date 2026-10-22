@@ -143,8 +143,12 @@ class ContinuousOnlineLearner:
     def __init__(self, feature_dim: int = 16):
         self.feature_dim = feature_dim
         self.storage_dir = "data/training_datasets"
+        self.checkpoint_dir = "data/checkpoints"
         os.makedirs(self.storage_dir, exist_ok=True)
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
         self.history_file = os.path.join(self.storage_dir, "online_continuous_history.jsonl")
+        self.weights_file = os.path.join(self.checkpoint_dir, "continuous_learner_weights.pt")
+        self.metadata_file = os.path.join(self.checkpoint_dir, "learning_metadata.json")
 
         # 1. Scikit-Learn Incremental Model (Online SGD Classifier with Log-Loss)
         self.sklearn_model = SGDClassifier(
@@ -169,6 +173,46 @@ class ContinuousOnlineLearner:
         self.loss_history: List[float] = []
         self.recent_predictions: List[Dict[str, Any]] = []
 
+        # 3. Load Persistent Checkpoints if Present on Disk
+        self._load_checkpoints()
+
+    def _load_checkpoints(self):
+        """Loads persistent model weights and training metadata from disk if available."""
+        if os.path.exists(self.weights_file):
+            try:
+                state_dict = torch.load(self.weights_file, map_location="cpu", weights_only=True)
+                self.pytorch_model.load_state_dict(state_dict)
+                logger.info("loaded_continuous_learner_weights_checkpoint", path=self.weights_file)
+            except Exception as e:
+                logger.warning("failed_to_load_weights_checkpoint", error=str(e))
+
+        if os.path.exists(self.metadata_file):
+            try:
+                with open(self.metadata_file, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    self.total_chats_learned = meta.get("total_chats_learned", 0)
+                    self.loss_history = meta.get("loss_history", [])
+                logger.info("loaded_learning_metadata", total_chats=self.total_chats_learned)
+            except Exception as e:
+                logger.warning("failed_to_load_metadata", error=str(e))
+
+    def _save_checkpoints(self):
+        """Persists model weights and training metadata to disk."""
+        try:
+            torch.save(self.pytorch_model.state_dict(), self.weights_file)
+            meta = {
+                "total_chats_learned": self.total_chats_learned,
+                "loss_history": self.loss_history[-50:],
+                "latest_loss": self.loss_history[-1] if self.loss_history else 0.693,
+                "timestamp": time.time(),
+                "weights_path": self.weights_file,
+                "history_path": self.history_file,
+            }
+            with open(self.metadata_file, "w", encoding="utf-8") as f:
+                json.dump(meta, f, indent=2)
+        except Exception as e:
+            logger.warning("failed_to_save_checkpoints", error=str(e))
+
     def _extract_feature_vector(self, query: str, entropy: float, sources_count: int) -> np.ndarray:
         """Deterministically projects text query and interaction metrics into continuous feature tensor."""
         vec = np.zeros(self.feature_dim, dtype=np.float64)
@@ -185,18 +229,22 @@ class ContinuousOnlineLearner:
 
     def learn_from_chat_turn(
         self,
-        query: str,
-        dominant_mode: str,
+        query: Optional[str] = None,
+        dominant_mode: str = "Harmonious Equilibrium",
         sources_count: int = 3,
         entropy: float = 0.5,
+        grounded_synthesis: Optional[str] = None,
+        citations: Optional[List[Dict[str, Any]]] = None,
+        user_query: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Automatically and silently trains from the latest chat turn without asking."""
+        actual_query = (query or user_query or "").strip()
         # Label: 0 for Aql/Particle, 1 for Qalb/Wave
         is_qalb = 1 if "qalb" in dominant_mode.lower() or "wave" in dominant_mode.lower() else 0
         target = np.array([is_qalb], dtype=np.int32)
 
         # 1. Extract feature vector in float64 for sklearn
-        features = self._extract_feature_vector(query, entropy=entropy, sources_count=sources_count)
+        features = self._extract_feature_vector(actual_query, entropy=entropy, sources_count=sources_count)
         X_np = features.astype(np.float64).reshape(1, -1)
 
         # 2. Incremental Scikit-Learn Online Training
@@ -221,7 +269,7 @@ class ContinuousOnlineLearner:
 
         self.total_chats_learned += 1
 
-        # 4. Save to persistent online training history
+        # 4. Save to persistent online training history & checkpoints
         record = {
             "turn_index": self.total_chats_learned,
             "timestamp": time.time(),
@@ -237,6 +285,23 @@ class ContinuousOnlineLearner:
         except Exception as e:
             logger.warning("online_learning_save_failed", error=str(e))
 
+        # Save weights and metadata to checkpoints folder
+        self._save_checkpoints()
+
+        # 5. Automatically generate and persist paired SFT / DPO / ShareGPT training data
+        if grounded_synthesis:
+            try:
+                from backend.synthesis.training_data_generator import training_data_generator
+                training_data_generator.create_paired_sample(
+                    query=query,
+                    grounded_synthesis=grounded_synthesis,
+                    citations=citations or [],
+                    dominant_mode=dominant_mode,
+                    entropy_score=entropy,
+                )
+            except Exception as e:
+                logger.warning("failed_to_create_paired_training_sample", error=str(e))
+
         logger.info(
             "online_continuous_learning_step_completed",
             turn=self.total_chats_learned,
@@ -251,6 +316,8 @@ class ContinuousOnlineLearner:
             "loss_history": self.loss_history[-10:],
             "predicted_mode": "Qalb (Wave)" if sklearn_prob[1] > 0.5 else "Aql (Particle)",
             "prediction_confidence": round(float(max(sklearn_prob)), 4),
+            "weights_checkpoint": self.weights_file,
+            "history_file": self.history_file,
         }
 
     def get_learning_telemetry(self) -> Dict[str, Any]:

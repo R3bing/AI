@@ -36,6 +36,8 @@ class LLMSynthesizer:
         self.ollama_base_url = settings.ollama_base_url
         self.ollama_model = settings.ollama_model
         self.ollama_fallback_model = settings.ollama_fallback_model
+        self.strata_base_url = settings.strata_base_url
+        self.strata_model = settings.strata_model
         self.timeout = settings.llm_timeout_seconds
         self.last_reasoning_trace: Optional[str] = None
         self.last_provider_used: str = "cognitive_fallback"
@@ -276,6 +278,53 @@ STRUCTURE YOUR RESPONSE CLEARLY:
                 logger.warning("ollama_attempt_failed", model=target_model, error=str(e))
         return None
 
+    async def is_ollama_available(self) -> bool:
+        """Checks if local Ollama daemon is active."""
+        try:
+            async with httpx.AsyncClient(timeout=1.5) as client:
+                resp = await client.get(f"{self.ollama_base_url.rstrip('/')}/api/tags")
+                return resp.status_code == 200
+        except Exception:
+            return False
+
+    async def is_strata_available(self) -> bool:
+        """Checks if local Strata 125B MoE daemon is running."""
+        try:
+            async with httpx.AsyncClient(timeout=1.5) as client:
+                resp = await client.get(f"{self.strata_base_url.rstrip('/')}/models")
+                return resp.status_code == 200
+        except Exception:
+            return False
+
+    async def _synthesize_strata(self, prompt: str) -> Optional[str]:
+        """Calls local Strata daemon (Qwen3.8-Flash-Next 125B MoE via OpenAI API compatibility)."""
+        url = f"{self.strata_base_url.rstrip('/')}/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "model": self.strata_model,
+            "messages": [
+                {"role": "system", "content": "You are the Quantum Knowledge Weaver (QKW) cognitive intelligence."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": settings.llm_temperature,
+            "max_tokens": 4096,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        text = choices[0].get("message", {}).get("content", "").strip()
+                        if text:
+                            self.last_provider_used = f"Local Strata MoE ({self.strata_model} 125B)"
+                            logger.info("strata_synthesis_success", model=self.strata_model)
+                            return text
+        except Exception as e:
+            logger.warning("strata_call_failed", error=str(e))
+        return None
+
     def _generate_cognitive_human_fallback(
         self,
         query: str,
@@ -392,6 +441,11 @@ STRUCTURE YOUR RESPONSE CLEARLY:
                 self.last_provider_used = f"OpenAI ({self.openai_model})"
                 return res
 
+        if self.provider == "strata":
+            res = await self._synthesize_strata(prompt)
+            if res:
+                return res
+
         # 2. Auto Mode: Waterfall through available credentials
         # A. Try DeepSeek (highest reasoning depth for complex inquiries)
         if deepseek_key:
@@ -420,14 +474,21 @@ STRUCTURE YOUR RESPONSE CLEARLY:
                 self.last_provider_used = f"OpenAI ({self.openai_model})"
                 return res
 
-        # E. Try local Ollama if running (DeepSeek-R1 / LLaMA)
+        # E. Try local Strata MoE if active (125B private gaming PC inference)
+        strata_active = await self.is_strata_available()
+        if strata_active:
+            res = await self._synthesize_strata(prompt)
+            if res:
+                return res
+
+        # F. Try local Ollama if running (DeepSeek-R1 / LLaMA)
         ollama_active = await self.is_ollama_available()
         if ollama_active:
             res = await self._synthesize_ollama(prompt)
             if res:
                 return res
 
-        # F. Advanced Human-Brain Cognitive Local Synthesizer
+        # G. Advanced Human-Brain Cognitive Local Synthesizer
         self.last_provider_used = "Cognitive Dual-Hemisphere Local Engine"
         logger.info("using_advanced_cognitive_local_synthesis")
         return self._generate_cognitive_human_fallback(query, citations, cross_references, parsed_query)

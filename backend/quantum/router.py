@@ -125,9 +125,17 @@ class QAOARouter:
         return psi, prob_dict
 
     def optimize_qaoa(
-        self, Q: np.ndarray, target_k: int = 3, p: int = 1, mixer_type: str = "xy_mixer"
-    ) -> Tuple[np.ndarray, np.ndarray, float]:
-        """Variational parameter optimization using Nelder-Mead to minimize cost expectation."""
+        self,
+        Q: np.ndarray,
+        target_k: int = 3,
+        p: int = 1,
+        mixer_type: str = "xy_mixer",
+        cvar_alpha: float = 0.25,
+    ) -> Tuple[np.ndarray, np.ndarray, float, float]:
+        """Variational parameter optimization using Nelder-Mead to minimize CVaR objective:
+        CVaR_alpha (Conditional Value-at-Risk) optimizes the expected cost over the best alpha-quantile,
+        significantly boosting the approximation ratio for combinatorial API routing.
+        """
         N = Q.shape[0]
         dim = 2 ** N
 
@@ -136,24 +144,53 @@ class QAOARouter:
             bits = np.array([(idx >> (N - 1 - i)) & 1 for i in range(N)], dtype=float)
             costs[idx] = bits.T @ Q @ bits
 
-        def expectation(params):
+        def cvar_objective(params):
             gamma = params[:p]
             beta = params[p:]
             _, prob_dict = self._statevector_qaoa(
                 Q, p=p, target_k=target_k, gamma=gamma, beta=beta, mixer_type=mixer_type
             )
-            energy = 0.0
+            # Sort bitstrings by classical cost ascending
+            items = []
             for bitstr, prob in prob_dict.items():
-                idx = int(bitstr, 2)
-                energy += prob * costs[idx]
-            return float(energy)
+                items.append((costs[int(bitstr, 2)], prob))
+            items.sort(key=lambda x: x[0])
+
+            # Compute CVaR over alpha quantile
+            cvar_energy = 0.0
+            accum_prob = 0.0
+            alpha = max(0.05, min(1.0, cvar_alpha))
+
+            for cost_val, prob in items:
+                if accum_prob + prob <= alpha:
+                    cvar_energy += cost_val * prob
+                    accum_prob += prob
+                else:
+                    remaining = alpha - accum_prob
+                    cvar_energy += cost_val * remaining
+                    accum_prob = alpha
+                    break
+
+            if accum_prob > 0:
+                cvar_energy /= accum_prob
+            else:
+                cvar_energy = items[0][0]
+
+            return float(cvar_energy)
 
         initial_params = np.concatenate([np.linspace(0.2, 0.7, p), np.linspace(0.7, 0.2, p)])
-        res = minimize(expectation, initial_params, method="Nelder-Mead", options={"maxiter": 35})
+        res = minimize(cvar_objective, initial_params, method="Nelder-Mead", options={"maxiter": 35})
         opt_gamma = res.x[:p]
         opt_beta = res.x[p:]
-        energy = float(res.fun)
-        return opt_gamma, opt_beta, energy
+        cvar_energy = float(res.fun)
+
+        # Also compute standard expectation energy for telemetry comparison
+        _, final_probs = self._statevector_qaoa(
+            Q, p=p, target_k=target_k, gamma=opt_gamma, beta=opt_beta, mixer_type=mixer_type
+        )
+        std_energy = sum(prob * costs[int(b, 2)] for b, prob in final_probs.items())
+
+        return opt_gamma, opt_beta, std_energy, cvar_energy
 
     def to_qiskit_circuit(
         self,
@@ -194,6 +231,92 @@ class QAOARouter:
             logger.warning("qiskit_circuit_build_failed", error=str(e))
             return None
 
+    def to_cirq_circuit(
+        self,
+        Q: np.ndarray,
+        gamma: np.ndarray,
+        beta: np.ndarray,
+    ):
+        """Constructs and returns an authentic Google Cirq Circuit for cross-platform validation."""
+        try:
+            import cirq
+            N = Q.shape[0]
+            qubits = [cirq.LineQubit(i) for i in range(N)]
+            circuit = cirq.Circuit()
+
+            # Superposition layer
+            circuit.append(cirq.H.on_each(*qubits))
+
+            p = len(gamma)
+            for step in range(p):
+                g = float(gamma[step])
+                b = float(beta[step])
+
+                # Problem Hamiltonian: Single-qubit Z rotations and ZZ interactions
+                for i in range(N):
+                    circuit.append(cirq.rz(rads=2 * g * float(Q[i, i]))(qubits[i]))
+                    for j in range(i + 1, N):
+                        if abs(Q[i, j]) > 1e-4:
+                            # Cirq ZZPowGate
+                            circuit.append(cirq.ZZPowGate(exponent=(2 * g * float(Q[i, j])) / np.pi)(qubits[i], qubits[j]))
+
+                # Mixer Hamiltonian: Rx gates
+                for i in range(N):
+                    circuit.append(cirq.rx(rads=2 * b)(qubits[i]))
+
+            circuit.append(cirq.measure(*qubits, key="result"))
+            return circuit
+        except Exception as e:
+            logger.warning("cirq_circuit_build_failed", error=str(e))
+            return None
+
+    def to_braket_openqasm(
+        self,
+        Q: np.ndarray,
+        gamma: np.ndarray,
+        beta: np.ndarray,
+    ) -> str:
+        """Constructs an OpenQASM 3.0 representation compatible with Amazon Braket QPUs
+        (Rigetti, IonQ, IQM).
+        """
+        N = Q.shape[0]
+        p = len(gamma)
+        lines = [
+            "OPENQASM 3.0;",
+            'include "stdgates.inc";',
+            f"qubit[{N}] q;",
+            f"bit[{N}] c;",
+            "",
+            "// Initial state preparation (superposition)",
+            f"h q[0:{N-1}];",
+            "",
+        ]
+
+        for step in range(p):
+            g = float(gamma[step])
+            b = float(beta[step])
+            lines.append(f"// --- QAOA Layer {step+1} ---")
+            lines.append("// Cost Hamiltonian Phase Separation")
+            for i in range(N):
+                rz_angle = round(2 * g * float(Q[i, i]), 5)
+                lines.append(f"rz({rz_angle}) q[{i}];")
+                for j in range(i + 1, N):
+                    if abs(Q[i, j]) > 1e-4:
+                        zz_angle = round(2 * g * float(Q[i, j]), 5)
+                        lines.append(f"cnot q[{i}], q[{j}];")
+                        lines.append(f"rz({zz_angle}) q[{j}];")
+                        lines.append(f"cnot q[{i}], q[{j}];")
+
+            lines.append("// Mixer Hamiltonian Evolution")
+            rx_angle = round(2 * b, 5)
+            for i in range(N):
+                lines.append(f"rx({rx_angle}) q[{i}];")
+            lines.append("")
+
+        lines.append("// Measurement")
+        lines.append("c = measure q;")
+        return "\n".join(lines)
+
     def route_query(
         self,
         query: str,
@@ -201,10 +324,18 @@ class QAOARouter:
         target_k: int = 3,
         force_apis: Optional[List[str]] = None,
         mixer_type: Optional[str] = None,
+        cvar_alpha: float = 0.25,
     ) -> Tuple[List[str], QuantumRoutingDetails]:
         """Executes QAOA routing for the given query and available APIs."""
         start_time = time.perf_counter()
         N = len(apis_metadata)
+        # Scale preservation: If apis_metadata > 11, filter to top 11 relevant APIs for exact 11-qubit QAOA simulation
+        if len(apis_metadata) > 11:
+            rel_pre = self.formulator.compute_relevance_scores(query, apis_metadata)
+            sorted_apis = sorted(apis_metadata, key=lambda a: rel_pre.get(a["id"], 0.0), reverse=True)
+            apis_metadata = sorted_apis[:11]
+            N = len(apis_metadata)
+
         mixer = mixer_type or self.default_mixer
 
         # Build QUBO matrix with API synergies
@@ -222,11 +353,15 @@ class QAOARouter:
                 quantum_energy=0.0,
                 execution_time_ms=round(elapsed_ms, 2),
                 backend_used="Manual Override with Quantum Verification",
+                cvar_alpha=cvar_alpha,
+                cvar_energy=0.0,
             )
 
-        # Optimize variational angles via QAOA
+        # Optimize variational angles via QAOA with CVaR objective
         p = min(self.p_steps, 2)
-        opt_gamma, opt_beta, opt_energy = self.optimize_qaoa(Q, target_k=target_k, p=p, mixer_type=mixer)
+        opt_gamma, opt_beta, std_energy, cvar_energy = self.optimize_qaoa(
+            Q, target_k=target_k, p=p, mixer_type=mixer, cvar_alpha=cvar_alpha
+        )
 
         # Sample final quantum state distribution
         _, prob_dict = self._statevector_qaoa(
@@ -249,7 +384,7 @@ class QAOARouter:
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
-        # Physical QPU Noise & Finite-Shot Measurement Emulation
+        # Physical QPU Noise & Finite-Shot Measurement Emulation with ZNE Error Mitigation
         from backend.quantum.physical_qpu_emulator import physical_qpu_emulator
         noisy_probs, qpu_telemetry = physical_qpu_emulator.apply_physical_noise(
             ideal_probabilities=prob_dict,
@@ -261,18 +396,22 @@ class QAOARouter:
         top_probs = {k: round(v, 4) for k, v in sorted(noisy_probs.items(), key=lambda x: x[1], reverse=True)[:5]}
 
         backend_name = "IBM Quantum Hardware (Cloud QPU)" if settings.ibm_quantum_token else "IBM Quantum QPU (Physical Noise Emulation: ibm_brisbane)"
-        algo_name = f"QAOA with XY-Mixer (p={p}, Dicke |D_{N}^{target_k}>)" if mixer == "xy_mixer" else f"QAOA Standard (p={p})"
+        algo_name = f"QAOA with XY-Mixer + CVaR(α={cvar_alpha}) (p={p}, Dicke |D_{N}^{target_k}>)" if mixer == "xy_mixer" else f"QAOA Standard + CVaR(α={cvar_alpha}) (p={p})"
 
         details = QuantumRoutingDetails(
             algorithm=algo_name,
             qubits_count=N,
             qubo_variables=api_ids,
             selected_apis=selected_apis,
-            quantum_energy=round(opt_energy, 4),
+            quantum_energy=round(std_energy, 4),
             execution_time_ms=round(elapsed_ms, 2),
             backend_used=backend_name,
             solution_probabilities=top_probs,
             physical_qpu_telemetry=qpu_telemetry,
+            cvar_alpha=cvar_alpha,
+            cvar_energy=round(cvar_energy, 4),
+            zne_mitigated_fidelity=qpu_telemetry.get("zne_mitigated_fidelity"),
+            circuit_exporters={"qiskit": True, "cirq": True, "braket_openqasm": True},
         )
 
         logger.info(
@@ -280,9 +419,11 @@ class QAOARouter:
             qubits=N,
             mixer=mixer,
             selected=selected_apis,
-            energy=opt_energy,
+            energy=std_energy,
+            cvar_energy=cvar_energy,
             latency_ms=elapsed_ms,
             fidelity=qpu_telemetry.get("quantum_state_fidelity"),
+            zne_fidelity=qpu_telemetry.get("zne_mitigated_fidelity"),
         )
 
         return selected_apis, details

@@ -189,13 +189,131 @@ class OntologicalSpiritualEngine:
                     "If pure awareness is untouched by past mistakes, how does that free you to begin anew with hope right now?",
                 ],
             ),
+            ScriptureEntry(
+                theme="Photosynthesis, Green Chlorophyll & Solar Bioenergetics (Al-Khadir)",
+                keywords=["photosynthesis", "plant", "plants", "chlorophyll", "chloroplast", "leaf", "leaves", "green", "vegetation", "seed", "harvest", "sunlight", "tree", "trees", "rain", "botany", "soil", "agriculture", "glucose", "cellular"],
+                quran_verse="And it is He who sends down rain from the sky, and We produce thereby the growth of every plant. We bring forth from it green shoots (Khadiran) from which We produce grains clustered together... Look at each of its fruits when it yields and ripens. Indeed in that are signs for a people who believe. (Surah Al-An'am 6:99) & '[It is He] who made for you from the green tree fire, and then from it you ignite.' (Surah Ya-Sin 36:80)",
+                surah_ref="Quran 6:99 & Quran 36:80",
+                tafseer_insight=(
+                    "Classical exegetes (Ibn Kathir, Al-Qurtubi, and Al-Razi) highlight that 'Khadiran' refers specifically to the green pigment substance "
+                    "(chlorophyll) produced in the growing plant embryo, from which all complex compounds, carbohydrates, clustered grains, and fruits are synthesized. "
+                    "Furthermore, Surah Ya-Sin (36:80) unveils a stunning physical principle of bioenergetic conservation: the green leaf captures incoming "
+                    "electromagnetic photons from the sun and locks them into chemical bonds (cellulose and lignin). When humans burn wood or fossilized plant fuels, "
+                    "they are releasing that very trapped ancient solar energy as fire. The leaf is a living bio-solar engine."
+                ),
+                hadith_tradition="There is no Muslim who plants a tree or sows a field, and then a bird, a person, or an animal eats from it, but it is counted as an ongoing act of charity (Sadaqah) for him until the Day of Resurrection.",
+                hadith_ref="Sahih al-Bukhari 2320 & Sahih Muslim 1553",
+                comparative_scripture="The tree which moves some to tears of joy is in the eyes of others only a green thing that stands in the way. Some see nature all ridicule and deformity... and some scarce see nature at all. But to the eyes of the person of imagination, nature is imagination itself. (William Blake) & 'By that tree, the whole universe is sustained.' (Katha Upanishad 2.3.1)",
+                comparative_tradition="Universal Nature Mysticism & Vedic Philosophy",
+                sufi_psychology_nafs=(
+                    "In Sufi contemplation, the green leaf undergoing silent photosynthesis is the living archetype of cosmic Tasbeeh (praise). "
+                    "Without pride or clamor, it absorbs sunlight and water to produce oxygen and nourishment for all living things. "
+                    "The human soul (Nafs) reaches its highest noble station (al-Nafs al-Safiyah) when it mirrors the leaf: absorbing truth and transmuting "
+                    "it into humble, life-giving service for creation without demanding praise or recognition."
+                ),
+                contemplative_inquiries=[
+                    "When you look at a green leaf quietly converting photons into life-sustaining oxygen and sugar, how does this evoke awe for the subtle, continuous sustenance of the Creator?",
+                    "If a single plant quietly feeds insects, birds, and humans as ongoing charity, how can your daily work become a source of silent nourishment for others?",
+                    "How does understanding that all human energy (from food to electricity) originates from trapped solar light deepen your sense of connection with the cosmos?",
+                ],
+            ),
         ]
 
     def _tokenize(self, text: str) -> List[str]:
         """Simple regex-based word tokenization."""
         return re.findall(r"\b[a-zA-Z]{3,}\b", text.lower())
 
-    def match_resonance(self, query: str) -> Dict[str, Any]:
+    # The 7 Classical Spiritual Stations of the Heart (Maqamat al-Qalb)
+    MAQAMAT = [
+        {
+            "id": 1,
+            "station": "Yaqza (Awakening / Conscious Alertness)",
+            "state_of_soul": "Nafs al-Ammarah -> Nafs al-Lawwamah (First spark of mindfulness)",
+            "core_meaning": "The moment consciousness shakes off heedlessness (Ghaflah) and perceives reality with lucidity.",
+            "quranic_grounding": "Is one who was dead and We gave him life and made for him light by which to walk among the people like one who is in darkness? (Surah Al-An'am 6:122)",
+            "bloch_sphere_vector": {"theta_deg": 30.0, "phi_deg": 0.0, "dominant": "Awakening Aql"},
+        },
+        {
+            "id": 2,
+            "station": "Tawbah (Metanoia / Epistemic Humility)",
+            "state_of_soul": "Nafs al-Lawwamah (Self-correcting soul)",
+            "core_meaning": "Recognition of cognitive limitations, bias, and epistemic error; turning toward truth.",
+            "quranic_grounding": "O you who have believed, repent to Allah with sincere repentance. (Surah At-Tahrim 66:8)",
+            "bloch_sphere_vector": {"theta_deg": 50.0, "phi_deg": 45.0, "dominant": "Corrective Equilibrium"},
+        },
+        {
+            "id": 3,
+            "station": "Inabah (Return to Truth / Ontological Grounding)",
+            "state_of_soul": "Nafs al-Mulhamah (Inspired soul)",
+            "core_meaning": "Actively orienting one's intellect and actions toward the ultimate Source of all truth.",
+            "quranic_grounding": "And return in repentance to your Lord and submit to Him before the punishment comes upon you. (Surah Az-Zumar 39:54)",
+            "bloch_sphere_vector": {"theta_deg": 70.0, "phi_deg": 90.0, "dominant": "Orienting Wave"},
+        },
+        {
+            "id": 4,
+            "station": "Tafakkur (Contemplative Meditation on Cosmic & Inner Signs)",
+            "state_of_soul": "Corpus Callosum Trans-Hemispheric Synthesis",
+            "core_meaning": "Observing the harmony of physics, biology, and consciousness as non-random divine verses.",
+            "quranic_grounding": "Who remember Allah while standing or sitting or on their sides and give thought to the creation of the heavens and the earth. (Surah Ali 'Imran 3:191)",
+            "bloch_sphere_vector": {"theta_deg": 90.0, "phi_deg": 180.0, "dominant": "Perfect 50/50 Duality Balance"},
+        },
+        {
+            "id": 5,
+            "station": "Sabr (Epistemic Patience & Resilience)",
+            "state_of_soul": "Nafs al-Radiyah (The persevering, content soul)",
+            "core_meaning": "Steadfastness in the face of scientific uncertainty, ambiguity, or life's tribulations.",
+            "quranic_grounding": "O you who have believed, seek help through patience and prayer. Indeed, Allah is with the patient. (Surah Al-Baqarah 2:153)",
+            "bloch_sphere_vector": {"theta_deg": 110.0, "phi_deg": 225.0, "dominant": "Resilient Wave"},
+        },
+        {
+            "id": 6,
+            "station": "Shukr (Awe, Wonder & Gratitude)",
+            "state_of_soul": "Nafs al-Mardiyyah (The pleasing soul)",
+            "core_meaning": "Profound awe at the mathematical elegance of natural laws and gratitude for life and perception.",
+            "quranic_grounding": "If you are grateful, I will surely increase your favor. (Surah Ibrahim 14:7)",
+            "bloch_sphere_vector": {"theta_deg": 130.0, "phi_deg": 270.0, "dominant": "Radiant Wave"},
+        },
+        {
+            "id": 7,
+            "station": "Itminan / Sakoon (The Soul at Supreme Rest)",
+            "state_of_soul": "Nafs al-Mutma'innah (The serene soul at absolute equilibrium)",
+            "core_meaning": "The ultimate state where logic (Aql) and heart (Qalb) melt into unified peace and certainty.",
+            "quranic_grounding": "O reassured soul, return to your Lord, well-pleased and pleasing to Him. (Surah Al-Fajr 89:27-28)",
+            "bloch_sphere_vector": {"theta_deg": 150.0, "phi_deg": 315.0, "dominant": "Sakoon Equilibrium"},
+        },
+    ]
+
+    def determine_maqam(self, query: str, particle_prob: float = 0.5, wave_prob: float = 0.5) -> Dict[str, Any]:
+        """Maps query context and wave-particle duality to one of the 7 Stations of the Heart."""
+        q_lower = query.lower()
+
+        # Keyword heuristics
+        if any(w in q_lower for w in ["peace", "sakoon", "rest", "calm", "tranquil", "satisfaction", "content"]):
+            chosen = self.MAQAMAT[6]  # Itminan
+        elif any(w in q_lower for w in ["thank", "grateful", "gratitude", "beauty", "awe", "wonder", "miracle"]):
+            chosen = self.MAQAMAT[5]  # Shukr
+        elif any(w in q_lower for w in ["patience", "pain", "struggle", "wait", "endure", "bear", "grief", "loss"]):
+            chosen = self.MAQAMAT[4]  # Sabr
+        elif any(w in q_lower for w in ["think", "reflect", "contemplate", "universe", "quantum", "stars", "why", "cosmos"]):
+            chosen = self.MAQAMAT[3]  # Tafakkur
+        elif any(w in q_lower for w in ["truth", "seek", "guidance", "path", "source", "direction"]):
+            chosen = self.MAQAMAT[2]  # Inabah
+        elif any(w in q_lower for w in ["mistake", "error", "guilt", "sorry", "forgive", "regret", "wrong"]):
+            chosen = self.MAQAMAT[1]  # Tawbah
+        else:
+            # Default mapping by wave probability
+            if wave_prob >= 0.75:
+                chosen = self.MAQAMAT[6]  # Itminan
+            elif wave_prob >= 0.60:
+                chosen = self.MAQAMAT[3]  # Tafakkur
+            elif particle_prob >= 0.70:
+                chosen = self.MAQAMAT[0]  # Yaqza
+            else:
+                chosen = self.MAQAMAT[3]  # Tafakkur
+
+        return chosen
+
+    def match_resonance(self, query: str, particle_prob: float = 0.5, wave_prob: float = 0.5) -> Dict[str, Any]:
         """Neural semantic and token overlap matcher to locate the deepest ontological resonance."""
         query_tokens = set(self._tokenize(query))
         best_entry = self.corpus[0]
@@ -223,6 +341,8 @@ class OntologicalSpiritualEngine:
         # Confidence percentage
         confidence = min(0.99, max(0.72, 0.70 + (max_score * 0.05)))
 
+        maqam = self.determine_maqam(query, particle_prob, wave_prob)
+
         return {
             "theme": best_entry.theme,
             "confidence_score": round(confidence, 3),
@@ -235,9 +355,10 @@ class OntologicalSpiritualEngine:
             "comparative_tradition": best_entry.comparative_tradition,
             "sufi_psychology_nafs": best_entry.sufi_psychology_nafs,
             "contemplative_questions": best_entry.contemplative_inquiries,
+            "spiritual_station_maqam": maqam["station"],
+            "maqam_details": maqam,
             "disclaimer": "🕊️ Epistemic & Contemplative Framework: Offered for personal mindfulness, ontological harmony, and spiritual tranquility (Sakoon). Transcends legal rulings (Non-Fatwa / Contemplative Exploration).",
         }
-
 
 
 # Global singleton

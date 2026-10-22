@@ -23,16 +23,16 @@ class MultiAIDialogueEngine:
         }
 
     async def _call_gemini(self, prompt: str, api_key: str) -> Optional[str]:
-        """Calls Google Gemini with fallback across 2.5-flash and 2.5-pro."""
-        models = ["gemini-2.5-flash", "gemini-2.5-pro"]
+        """Calls Google Gemini with fast 4s timeout."""
+        models = ["gemini-2.5-flash", "gemini-1.5-flash"]
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1024},
+                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 600},
             }
             try:
-                async with httpx.AsyncClient(timeout=12.0) as client:
+                async with httpx.AsyncClient(timeout=4.0) as client:
                     resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
                     if resp.status_code == 200:
                         parts = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
@@ -43,26 +43,26 @@ class MultiAIDialogueEngine:
         return None
 
     async def _call_groq(self, prompt: str, api_key: str) -> Optional[str]:
-        """Calls Groq LPU inference with fallback candidate models."""
+        """Calls Groq LPU inference with fast 4s timeout."""
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "User-Agent": "QuantumKnowledgeWeaver/1.0",
             "Content-Type": "application/json",
         }
-        candidate_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+        candidate_models = ["openai/gpt-oss-120b", "llama-3.3-70b-versatile"]
         for model in candidate_models:
             payload = {
                 "model": model,
                 "messages": [
-                    {"role": "system", "content": "You are Groq LPU, an ultra-fast empirical reality-tester and fact-checker in a multi-AI collaborative council."},
+                    {"role": "system", "content": "You are Groq LPU, an ultra-fast empirical reality-tester in a multi-AI council."},
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.2,
-                "max_tokens": 1024,
+                "max_tokens": 600,
             }
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=4.0) as client:
                     resp = await client.post(url, json=payload, headers=headers)
                     if resp.status_code == 200:
                         content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
